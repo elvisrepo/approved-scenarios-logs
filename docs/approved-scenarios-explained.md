@@ -27,6 +27,47 @@ flowchart LR
 
 Key rule: **the runner never fixes anything.** It only parses, executes, renders, and diffs. A human (or agent with approval) decides which side was wrong — exactly what we did today.
 
+Interactive diagram of this loop (built with [archify](https://github.com/tt-a1i/archify)): [`approved-scenarios-runner.workflow.html`](./approved-scenarios-runner.workflow.html) — green path down the middle, red decision branch at the diff gate.
+
+## The diff, line by line
+
+The "diff" is not `git diff`. It is one string comparison in `tests/scenarios.test.ts:30`:
+
+```ts
+expect(renderScenario(scenario, result)).toBe(normalizeText(text));
+```
+
+Left side: the approved file, normalized. Right side: the input lines from that same file plus the code's **actual** output, rendered back into identical markdown. Four stages, each dumb on purpose:
+
+1. **Parse** (`parseScenario`) — reads `## Input` lines into sessions. Throws if there is no `## Result` section or any of the three required keys is missing. A fixture without expectations cannot exist.
+2. **Execute** — calls `mergeSleep(sessions)`. No mocks, no setup code; the input comes from the file.
+3. **Render** (`renderScenario`) — formats the actual result with the same `sessions: …` / `total_minutes: …` / `overlaps_merged: …` lines, reusing the file's own input lines verbatim.
+4. **Normalize + compare** (`normalizeText`) — LF endings, `trimEnd` every line, exactly one final newline. Then plain equality.
+
+Because the whole file is the assertion, a failure shows **every wrong line at once**, prefixed `-` (what the file believes) vs `+` (what the code produced). Real ones from this repo:
+
+Touching boundary (belief right, code wrong):
+
+```diff
+  ## Result
+- sessions: 22:00-23:00, 23:00-00:00
++ sessions: 22:00-00:00
+  total_minutes: 120
+- overlaps_merged: 0
++ overlaps_merged: 1
+```
+
+Triple overlap (belief wrong, code right — 420 double-counts the overlaps):
+
+```diff
+  sessions: 22:00-04:00
+- total_minutes: 420
++ total_minutes: 360
+  overlaps_merged: 2
+```
+
+Note what the diff does *not* do: it never rewrites the file, never patches `src/`, never guesses intent. Blank lines are structural (an extra one after `## Input` fails the diff even when every value is right). Reading the diff and picking a side — fix the belief or fix the behavior — is the human review step the pattern is designed around.
+
 ## How we implement it here
 
 | Piece | File | Job |

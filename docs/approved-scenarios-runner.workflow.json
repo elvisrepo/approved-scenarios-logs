@@ -1,0 +1,218 @@
+{
+  "cards": [
+    {
+      "dot": "cyan",
+      "items": [
+        "Parses, executes, renders, diffs \u2014 never edits code or fixtures",
+        "One assertion: rendered actual == normalized approved file"
+      ],
+      "title": "Runner contract"
+    },
+    {
+      "dot": "amber",
+      "items": [
+        "normalizeText: LF endings, trimEnd each line, exactly one final newline",
+        "Blank lines are structural \u2014 one extra blank line fails the diff",
+        "Mismatch prints every wrong line at once: - expected file, + actual code output"
+      ],
+      "title": "The diff, line by line"
+    },
+    {
+      "dot": "emerald",
+      "items": [
+        "File wrong (bad belief) \u2192 edit the .approved.md, needs approval",
+        "Code wrong (bad behavior) \u2192 edit src/, e.g. <= became <",
+        "Re-run npm test after either fix \u2014 green means belief and code agree"
+      ],
+      "title": "Who fixes what"
+    }
+  ],
+  "diagram_type": "workflow",
+  "edges": [
+    {
+      "from": "fixture",
+      "id": "author-fixture",
+      "to": "parse"
+    },
+    {
+      "from": "parse",
+      "id": "parse-run",
+      "label": "sessions",
+      "to": "execute"
+    },
+    {
+      "from": "execute",
+      "id": "run-render",
+      "label": "result",
+      "to": "render"
+    },
+    {
+      "from": "render",
+      "id": "render-diff",
+      "label": "actual text",
+      "to": "compare"
+    },
+    {
+      "from": "compare",
+      "id": "match-pass",
+      "label": "match",
+      "to": "pass"
+    },
+    {
+      "from": "compare",
+      "id": "mismatch-human",
+      "label": "mismatch",
+      "to": "decide",
+      "variant": "security"
+    },
+    {
+      "from": "decide",
+      "id": "code-wrong",
+      "label": "code wrong",
+      "to": "fixcode"
+    },
+    {
+      "from": "decide",
+      "id": "file-wrong",
+      "label": "file wrong",
+      "to": "fixfile"
+    }
+  ],
+  "lanes": [
+    {
+      "id": "author",
+      "label": "Spec & Review"
+    },
+    {
+      "id": "runner",
+      "label": "Test Runner"
+    },
+    {
+      "id": "code",
+      "label": "Implementation"
+    }
+  ],
+  "mainPath": [
+    "fixture",
+    "parse",
+    "execute",
+    "render",
+    "compare",
+    "pass"
+  ],
+  "meta": {
+    "quality_profile": "showcase",
+    "title": "Approved Scenarios Runner Loop",
+    "views": [
+      {
+        "focus": [
+          "fixture",
+          "parse",
+          "execute",
+          "render",
+          "compare",
+          "pass"
+        ],
+        "id": "happy-path",
+        "label": "Green path",
+        "note": "Fixture in, one diff, pass when code matches belief."
+      },
+      {
+        "focus": [
+          "compare",
+          "decide",
+          "fixcode",
+          "fixfile"
+        ],
+        "id": "red-path",
+        "label": "Red path and fix",
+        "note": "The diff is read-only evidence; a human fixes file or code."
+      }
+    ]
+  },
+  "nodes": [
+    {
+      "col": 0,
+      "id": "fixture",
+      "label": "Approved .md file",
+      "lane": "author",
+      "sublabel": "input + expected",
+      "type": "external",
+      "width": 132
+    },
+    {
+      "col": 0,
+      "id": "parse",
+      "label": "Parse and validate",
+      "lane": "runner",
+      "sublabel": "rejects hollow tests",
+      "type": "backend",
+      "width": 132
+    },
+    {
+      "col": 1,
+      "id": "execute",
+      "label": "Execute mergeSleep",
+      "lane": "runner",
+      "sublabel": "pure function, no I/O",
+      "type": "backend",
+      "width": 132
+    },
+    {
+      "col": 2,
+      "id": "render",
+      "label": "Render actual",
+      "lane": "runner",
+      "sublabel": "rebuilds file text",
+      "type": "backend",
+      "width": 132
+    },
+    {
+      "col": 3,
+      "id": "compare",
+      "label": "Diff file vs actual",
+      "lane": "runner",
+      "sublabel": "one assertion, all lines",
+      "tag": "never auto-fixes",
+      "type": "backend",
+      "width": 132
+    },
+    {
+      "col": 4,
+      "id": "pass",
+      "label": "PASS",
+      "lane": "runner",
+      "sublabel": "belief matches code",
+      "type": "backend",
+      "width": 132
+    },
+    {
+      "col": 4,
+      "id": "decide",
+      "label": "Human decides",
+      "lane": "author",
+      "sublabel": "file wrong or code wrong?",
+      "type": "security",
+      "width": 132
+    },
+    {
+      "col": 5,
+      "id": "fixcode",
+      "label": "Fix src/",
+      "lane": "code",
+      "sublabel": "change behavior",
+      "type": "backend",
+      "width": 132
+    },
+    {
+      "col": 5,
+      "id": "fixfile",
+      "label": "Fix .approved.md",
+      "lane": "author",
+      "sublabel": "correct the belief",
+      "type": "frontend",
+      "width": 132
+    }
+  ],
+  "schema_version": 2
+}
