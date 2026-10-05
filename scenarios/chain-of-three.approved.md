@@ -7,5 +7,5 @@ watch   01:30-04:00
 
 ## Result
 sessions: 22:00-04:00
-total_minutes: 420
+total_minutes: 360
 overlaps_merged: 2
