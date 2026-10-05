@@ -21,7 +21,7 @@ export function mergeSleep(sessions: SleepSession[]): MergeResult {
   let current = intervals[0]!;
   for (let i = 1; i < intervals.length; i++) {
     const next = intervals[i]!;
-    if (next.startMs <= current.endMs) {
+    if (next.startMs < current.endMs) {
       if (next.endMs > current.endMs) {
         current.endMs = next.endMs;
       }
