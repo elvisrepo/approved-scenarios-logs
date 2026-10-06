@@ -9,7 +9,7 @@ import type { SleepSession } from './types';
  * point, and compare every captured line against the approved `.log` file.
  */
 export type MergeLogEvent =
-  | { event: 'merge_requested'; count: number }
+  | { event: 'merge_requested'; sessions: SleepSession[] }
   | { event: 'session_merged'; start: string; end: string }
   | { event: 'merge_completed'; totalMinutes: number; overlapsMerged: number };
 
@@ -22,8 +22,9 @@ export type MergeLogEvent =
  *
  * @param sessions - Sleep records from any number of sources, in any order.
  * @returns One JSON-encoded {@link MergeLogEvent} per line: first
- * `merge_requested`, then one `session_merged` per merged block, then a final
- * `merge_completed` summary.
+ * `merge_requested` carrying the input sessions (so the line doubles as a
+ * replayable invocation), then one `session_merged` per merged block, then a
+ * final `merge_completed` summary.
  *
  * @example
  * ```ts
@@ -31,13 +32,15 @@ export type MergeLogEvent =
  *   { source: 'fitbit', start: '2026-10-01T22:00:00Z', end: '2026-10-02T06:00:00Z' },
  *   { source: 'phone', start: '2026-10-01T22:00:00Z', end: '2026-10-02T06:00:00Z' },
  * ]);
- * // ['{"event":"merge_requested","count":2}',
+ * // ['{"event":"merge_requested","sessions":[...2 sessions...]}',
  * //  '{"event":"session_merged","start":"2026-10-01T22:00:00Z","end":"2026-10-02T06:00:00Z"}',
  * //  '{"event":"merge_completed","totalMinutes":480,"overlapsMerged":1}']
  * ```
  */
 export function logMerge(sessions: SleepSession[]): string[] {
-  const lines: string[] = [JSON.stringify({ event: 'merge_requested', count: sessions.length } satisfies MergeLogEvent)];
+  const lines: string[] = [
+    JSON.stringify({ event: 'merge_requested', sessions } satisfies MergeLogEvent),
+  ];
 
   const result = mergeSleep(sessions);
 
