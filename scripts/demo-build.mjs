@@ -9,6 +9,13 @@ execSync(
   { stdio: 'inherit' },
 );
 
+// The scenario parser/renderer (type-only src import, so no import patching
+// needed) powers the live red→green replay in the Scenarios tab.
+execSync(
+  'node node_modules/typescript/bin/tsc tests/support/scenarioFormat.ts src/types.ts --ignoreConfig --target ES2022 --module ES2022 --moduleResolution bundler --strict --skipLibCheck --outDir demo/build/fmt --rootDir .',
+  { stdio: 'inherit' },
+);
+
 const out = 'demo/build/logMerge.js';
 writeFileSync(out, readFileSync(out, 'utf8').replace("from './mergeSleep'", "from './mergeSleep.js'"));
 console.log('demo build ok');
