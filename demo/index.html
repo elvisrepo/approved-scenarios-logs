@@ -23,6 +23,17 @@
     textarea { width: 100%; max-width: 560px; font-family: monospace; }
     .pass { color: #087f69; font-weight: bold; }
     .fail { color: #b32f50; font-weight: bold; }
+    details { margin-bottom: 0.75rem; border: 1px solid #3c3c3c; border-radius: 6px; }
+    summary { cursor: pointer; padding: 0.6rem 0.8rem; font-size: 1.1rem; font-weight: bold; background: #f4f4f4; border-radius: 6px; }
+    details[open] summary { border-radius: 6px 6px 0 0; }
+    summary .file { font-weight: normal; font-size: 0.85rem; color: #666; font-family: monospace; }
+    pre.code { margin: 0; border-radius: 0 0 6px 6px; background: #1e1e1e; color: #d4d4d4; }
+    pre.code .tok-com { color: #6a9955; }
+    pre.code .tok-str { color: #ce9178; }
+    pre.code .tok-kw { color: #569cd6; }
+    pre.code .tok-type { color: #4ec9b0; }
+    pre.code .tok-num { color: #b5cea8; }
+    pre.code .tok-fn { color: #dcdcaa; }
   </style>
 </head>
 <body>
@@ -65,26 +76,42 @@
   </section>
 
   <section id="tab-source" hidden>
-    <h2>Types — the contract everything agrees on</h2>
-    <pre id="src-types">loading…</pre>
-    <h2>mergeSleep — the pure function under test</h2>
-    <pre id="src-merge">loading…</pre>
-    <h2>logMerge — the logging seam (still pure: returns lines)</h2>
-    <pre id="src-logmerge">loading…</pre>
+    <h2>Source code</h2>
+    <details>
+      <summary>Types — the contract everything agrees on <span class="file">src/types.ts</span></summary>
+      <pre class="code" id="src-types">loading…</pre>
+    </details>
+    <details>
+      <summary>mergeSleep — the pure function under test <span class="file">src/mergeSleep.ts</span></summary>
+      <pre class="code" id="src-merge">loading…</pre>
+    </details>
+    <details>
+      <summary>logMerge — the logging seam (still pure: returns lines) <span class="file">src/logMerge.ts</span></summary>
+      <pre class="code" id="src-logmerge">loading…</pre>
+    </details>
   </section>
 
   <section id="tab-scenarios" hidden>
     <h2>Approved scenarios</h2>
-    <p>Each file is input + expected output in domain language. The runner (<code>tests/scenarios.test.ts</code>) parses, executes, renders actual back to this format, and diffs. Click to view the approved file exactly as the runner sees it.</p>
-    <div class="filelist" id="scenariolist"></div>
+    <p>Each file is input + expected output in domain language. The runner (<code>tests/scenarios.test.ts</code>) parses, executes, renders actual back to this format, and diffs. Pick a file to view it exactly as the runner sees it.</p>
+    <div class="row">
+      <label>View approved file
+        <select id="scenario-view-pick"></select>
+      </label>
+    </div>
     <pre id="scenarioview">pick a scenario above</pre>
 
     <h2>Red → green, live: an incorrect approval</h2>
-    <p>Below is the chain-of-three scenario as first written — with the classic mistake (summing inputs: 120+150+150 = <code>420</code> instead of the union <code>360</code>). Press <strong>Run test</strong>: the same parse → execute → render → diff steps as <code>tests/scenarios.test.ts:26-30</code> run in this page. Then <strong>Apply the fix</strong> (what the human approved) and run again.</p>
+    <p>Pick a scenario — each loads with its classic mistake baked in. Press <strong>Run test</strong>: the same parse → execute → render → diff steps as <code>tests/scenarios.test.ts:26-30</code> run in this page. Edit the text to break it yourself, <strong>Apply the fix</strong> (what the human approved), and run again.</p>
+    <div class="row">
+      <label>Load into runner
+        <select id="replay-pick"></select>
+      </label>
+    </div>
     <textarea id="replay-file" rows="13" cols="60"></textarea>
     <div class="row">
       <button id="replay-run">Run test</button>
-      <button id="replay-fix">Apply the fix (420 → 360)</button>
+      <button id="replay-fix">Apply the fix</button>
     </div>
     <pre id="replay-out">press Run test</pre>
 
@@ -232,9 +259,35 @@
         $(el).textContent = `could not load ${path}: ${e}`;
       }
     };
-    load('../src/types.ts', 'src-types');
-    load('../src/mergeSleep.ts', 'src-merge');
-    load('../src/logMerge.ts', 'src-logmerge');
+    // Swap the plain-text source blocks for VS Code-style highlighted code.
+    const escHtml = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const TS_TOKEN =
+      /(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|('(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\]|\\.)*`)|\b(import|export|from|function|return|const|let|var|if|else|for|of|new|type|interface|extends|satisfies|throws?)\b|\b(number|string|boolean|void|SleepSession|MergedSession|MergeResult|MergeLogEvent|ParsedLog|ParsedScenario)\b|\b(\d+(?:\.\d+)?)\b|([A-Za-z_$][\w$]*)(?=\s*\()/g;
+    const highlightTS = (src) => {
+      let html = '';
+      let last = 0;
+      TS_TOKEN.lastIndex = 0;
+      let m;
+      while ((m = TS_TOKEN.exec(src)) !== null) {
+        html += escHtml(src.slice(last, m.index));
+        const [tok, com, str, kw, type, num, fn] = m;
+        const cls = com ? 'tok-com' : str ? 'tok-str' : kw ? 'tok-kw' : type ? 'tok-type' : num ? 'tok-num' : 'tok-fn';
+        html += `<span class="${cls}">${escHtml(tok)}</span>`;
+        last = m.index + tok.length;
+      }
+      return html + escHtml(src.slice(last));
+    };
+    const loadCode = async (path, el) => {
+      try {
+        const r = await fetch(path);
+        $(el).innerHTML = r.ok ? highlightTS(await r.text()) : escHtml(`could not load ${path}`);
+      } catch (e) {
+        $(el).textContent = `could not load ${path}: ${e}`;
+      }
+    };
+    loadCode('../src/types.ts', 'src-types');
+    loadCode('../src/mergeSleep.ts', 'src-merge');
+    loadCode('../src/logMerge.ts', 'src-logmerge');
 
     // ---- scenarios + logs tabs (add new filenames here as fixtures land) ----
     const scenarioFiles = [
@@ -258,23 +311,71 @@
         box.appendChild(b);
       });
     };
-    fillList(scenarioFiles, '../scenarios/', 'scenariolist', 'scenarioview');
-    fillList(logFiles, '../logs/', 'loglist', 'logview');
+    // Viewer: one dropdown over the approved files, as the runner sees them.
+    const viewPick = $('scenario-view-pick');
+    scenarioFiles.forEach((f) => {
+      const o = document.createElement('option');
+      o.value = f;
+      o.textContent = f;
+      viewPick.appendChild(o);
+    });
+    viewPick.onchange = async () => {
+      const r = await fetch(`../scenarios/${viewPick.value}`);
+      $('scenarioview').textContent = r.ok ? await r.text() : `could not load ${viewPick.value}`;
+    };
 
     // ---- red → green replay: the same steps as tests/scenarios.test.ts:26-30 ----
-    const WRONG =
-      '# Chain of three overlapping sessions becomes one\n' +
-      '\n' +
-      '## Input\n' +
-      'fitbit  22:00-00:00\n' +
-      'phone   23:30-02:00\n' +
-      'watch   01:30-04:00\n' +
-      '\n' +
-      '## Result\n' +
-      'sessions: 22:00-04:00\n' +
-      'total_minutes: 420\n' +
-      'overlaps_merged: 2\n';
-    $('replay-file').value = WRONG;
+    // One classic mistake per scenario: [correct text, wrong text] swaps.
+    // Verified with the real runner code: correct passes, wrong fails, fix passes.
+    const REPLAY_BREAKS = {
+      'chain-of-three.approved.md': [['total_minutes: 360', 'total_minutes: 420']],
+      'touching-sessions.approved.md': [
+        ['sessions: 22:00-23:00, 23:00-00:00', 'sessions: 22:00-00:00'],
+        ['overlaps_merged: 0', 'overlaps_merged: 1'],
+      ],
+      'exact-duplicate.approved.md': [
+        ['sessions: 22:00-06:00', 'sessions: 22:00-06:00, 22:00-06:00'],
+        ['total_minutes: 480', 'total_minutes: 960'],
+        ['overlaps_merged: 1', 'overlaps_merged: 0'],
+      ],
+      'contained-session.approved.md': [
+        ['sessions: 22:00-06:00', 'sessions: 22:00-06:00, 23:00-02:00'],
+        ['total_minutes: 480', 'total_minutes: 660'],
+        ['overlaps_merged: 1', 'overlaps_merged: 0'],
+      ],
+      'partial-overlap.approved.md': [
+        ['sessions: 22:00-06:30', 'sessions: 22:00-06:00, 22:30-06:30'],
+        ['total_minutes: 510', 'total_minutes: 960'],
+        ['overlaps_merged: 1', 'overlaps_merged: 0'],
+      ],
+      'separate-sessions.approved.md': [
+        ['sessions: 23:00-07:00, 14:00-14:45', 'sessions: 14:00-14:45, 23:00-07:00'],
+      ],
+    };
+    const breakIt = (text, file) =>
+      (REPLAY_BREAKS[file] ?? []).reduce((s, [a, b]) => s.replace(a, b), text);
+    const fixIt = (text, file) =>
+      (REPLAY_BREAKS[file] ?? []).reduce((s, [a, b]) => s.replace(b, a), text);
+
+    // Runner: mistake versions only — the correct ones live in the viewer above.
+    const pick = $('replay-pick');
+    pick.querySelectorAll('option').forEach((o) => o.remove());
+    Object.keys(REPLAY_BREAKS).forEach((f) => {
+      const bad = document.createElement('option');
+      bad.value = f;
+      bad.textContent = `${f} (with classic mistake)`;
+      pick.appendChild(bad);
+    });
+    let currentFile = 'chain-of-three.approved.md';
+    const loadPick = async () => {
+      currentFile = pick.value;
+      const r = await fetch(`../scenarios/${currentFile}`);
+      let text = r.ok ? await r.text() : `could not load ${currentFile}`;
+      $('replay-file').value = breakIt(text, currentFile);
+    };
+    pick.onchange = loadPick;
+    pick.value = 'chain-of-three.approved.md';
+    loadPick();
 
     $('replay-run').onclick = () => {
       const text = $('replay-file').value;
@@ -308,11 +409,11 @@
     };
 
     $('replay-fix').onclick = () => {
-      $('replay-file').value = $('replay-file').value.replace('total_minutes: 420', 'total_minutes: 360');
+      $('replay-file').value = fixIt($('replay-file').value, currentFile);
     };
 
     // ---- side by side: same case, approved file vs traditional assertions ----
-    $('side-md').textContent = WRONG.replace('total_minutes: 420', 'total_minutes: 360');
+    load('../scenarios/chain-of-three.approved.md', 'side-md');
     $('side-code').textContent = [
       "it('chain of three overlapping sessions becomes one', () => {",
       '  const result = mergeSleep([',
