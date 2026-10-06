@@ -6,7 +6,8 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "demo:build": "node scripts/demo-build.mjs"
   },
   "devDependencies": {
     "@types/node": "^26.6.4",

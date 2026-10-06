@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sleep Merger — pattern showcase</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+    nav button { margin-right: 0.25rem; padding: 0.4rem 0.8rem; }
+    nav button[aria-selected="true"] { font-weight: bold; }
+    section { margin-top: 1rem; }
+    fieldset { margin-bottom: 1rem; }
+    input { margin-right: 0.5rem; }
+    ul { padding-left: 1.2rem; }
+    li { margin: 0.25rem 0; }
+    pre { background: #f4f4f4; padding: 0.75rem; overflow-x: auto; }
+    .row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+    button { margin: 0.25rem 0.25rem 0.25rem 0; }
+    iframe.diagram { width: 100%; height: 720px; border: 1px solid #ccc; }
+    .filelist button { display: block; margin: 0.15rem 0; }
+  </style>
+</head>
+<body>
+  <h1>Sleep Merger — pattern showcase</h1>
+  <nav role="tablist">
+    <button data-tab="demo" aria-selected="true">Demo</button>
+    <button data-tab="source" aria-selected="false">Source code</button>
+    <button data-tab="scenarios" aria-selected="false">Scenarios</button>
+    <button data-tab="logs" aria-selected="false">Logs</button>
+    <button data-tab="diagram" aria-selected="false">Runner diagram</button>
+    <button data-tab="patterns" aria-selected="false">Patterns</button>
+  </nav>
+
+  <section id="tab-demo">
+    <p>One "night" runs 18:00 → 18:00 next day. Times use that mapping, same as the approved scenarios.</p>
+    <fieldset>
+      <legend>Add a sleep session</legend>
+      <div class="row">
+        <label>Source <input id="source" value="fitbit" size="8" /></label>
+        <label>Start <input id="start" value="22:00" size="5" placeholder="HH:MM" /></label>
+        <label>End <input id="end" value="06:00" size="5" placeholder="HH:MM" /></label>
+        <button id="add">Add session</button>
+      </div>
+    </fieldset>
+    <h2>Sessions (<span id="count">0</span>)</h2>
+    <ul id="list"></ul>
+    <button id="merge" disabled>Merge</button>
+    <div id="preview" hidden>
+      <h2>Merged preview</h2>
+      <ul id="merged"></ul>
+      <p>Total: <strong id="total"></strong> min · Overlaps merged: <strong id="overlaps"></strong></p>
+      <button id="confirm">Confirm</button>
+    </div>
+    <div id="final" hidden>
+      <h2>Confirmed result</h2>
+      <pre id="result"></pre>
+      <h2>Logs</h2>
+      <pre id="logs"></pre>
+    </div>
+  </section>
+
+  <section id="tab-source" hidden>
+    <h2>Types — the contract everything agrees on</h2>
+    <pre id="src-types">loading…</pre>
+    <h2>mergeSleep — the pure function under test</h2>
+    <pre id="src-merge">loading…</pre>
+    <h2>logMerge — the logging seam (still pure: returns lines)</h2>
+    <pre id="src-logmerge">loading…</pre>
+  </section>
+
+  <section id="tab-scenarios" hidden>
+    <h2>Approved scenarios</h2>
+    <p>Each file is input + expected output in domain language. The runner (<code>tests/scenarios.test.ts</code>) parses, executes, renders actual back to this format, and diffs. Click to view the approved file exactly as the runner sees it.</p>
+    <div class="filelist" id="scenariolist"></div>
+    <pre id="scenarioview">pick a scenario above</pre>
+  </section>
+
+  <section id="tab-logs" hidden>
+    <h2>Approved logs</h2>
+    <p>Line 1 is the invocation (<code>merge_requested</code> carrying the input sessions); the rest is the expected emitted output. The runner (<code>tests/logs.test.ts</code>) replays line 1 through <code>logMerge</code> and compares every captured line.</p>
+    <div class="filelist" id="loglist"></div>
+    <pre id="logview">pick a log above</pre>
+  </section>
+
+  <section id="tab-diagram" hidden>
+    <h2>Runner loop diagram</h2>
+    <p>Green path down the middle, red decision branch at the diff gate. Built with <a href="https://github.com/tt-a1i/archify">archify</a>.</p>
+    <iframe class="diagram" src="../docs/approved-scenarios-runner.workflow.html" title="Approved scenarios runner loop"></iframe>
+  </section>
+
+  <section id="tab-patterns" hidden>
+    <h2>The three patterns</h2>
+    <ul>
+      <li><strong>Constrained Tests</strong> — the parent. An external DSL + strict parser makes hollow tests impossible, so coverage means something. <a href="https://lexler.github.io/augmented-coding-patterns/patterns/constrained-tests/">pattern page</a> · local write-up: <a href="../docs/constrained-tests-explained.md">docs/constrained-tests-explained.md</a></li>
+      <li><strong>Approved Scenarios</strong> — constrained tests optimized for review ease: input + expected output in domain language. <a href="https://lexler.github.io/augmented-coding-patterns/patterns/approved-scenarios/">pattern page</a> · local write-up: <a href="../docs/approved-scenarios-explained.md">docs/approved-scenarios-explained.md</a></li>
+      <li><strong>Approved Logs</strong> — constrained tests optimized for bug-repro speed: production log sections become regression tests. <a href="https://lexler.github.io/augmented-coding-patterns/patterns/approved-logs/">pattern page</a></li>
+    </ul>
+    <p>Rule of the house (<code>AGENTS.md</code>): <code>scenarios/</code> and <code>logs/</code> are approved specification — propose, review, then write; the runner never fixes anything.</p>
+  </section>
+
+  <script type="module">
+    import { logMerge } from './build/logMerge.js';
+
+    // ---- tabs ----
+    const tabs = [...document.querySelectorAll('nav button')];
+    tabs.forEach((btn) => {
+      btn.onclick = () => {
+        tabs.forEach((b) => b.setAttribute('aria-selected', String(b === btn)));
+        document.querySelectorAll('body > section').forEach((s) => {
+          s.hidden = s.id !== `tab-${btn.dataset.tab}`;
+        });
+      };
+    });
+
+    // ---- demo tab (same night mapping as tests/support/scenarioFormat.ts) ----
+    const BASE_MS = Date.parse('2026-10-01T18:00:00Z');
+    const NIGHT_STARTS_AT = 18 * 60;
+    const MINUTES_PER_DAY = 24 * 60;
+    const intoNight = (h, m) =>
+      ((((h * 60 + m - NIGHT_STARTS_AT) % MINUTES_PER_DAY) + MINUTES_PER_DAY) % MINUTES_PER_DAY);
+    const isoAt = (v) => new Date(BASE_MS + v * 60_000).toISOString().replace('.000Z', 'Z');
+    const toIso = (clock) => {
+      const [h, m] = clock.split(':').map(Number);
+      return isoAt(intoNight(h, m));
+    };
+    const clockOf = (iso) => iso.slice(11, 16);
+
+    const sessions = [];
+    const $ = (id) => document.getElementById(id);
+
+    function renderList() {
+      $('count').textContent = sessions.length;
+      $('list').innerHTML = '';
+      sessions.forEach((s, i) => {
+        const li = document.createElement('li');
+        li.textContent = `${s.source} ${clockOf(s.start)}-${clockOf(s.end)} `;
+        const rm = document.createElement('button');
+        rm.textContent = 'remove';
+        rm.onclick = () => { sessions.splice(i, 1); renderList(); };
+        li.appendChild(rm);
+        $('list').appendChild(li);
+      });
+      $('merge').disabled = sessions.length === 0;
+      $('preview').hidden = true;
+      $('final').hidden = true;
+    }
+
+    $('add').onclick = () => {
+      const source = $('source').value.trim() || 'unknown';
+      let start = toIso($('start').value);
+      let end = toIso($('end').value);
+      if (end === start) { alert('Start and end must differ'); return; }
+      if (end < start) {
+        end = new Date(Date.parse(end) + MINUTES_PER_DAY * 60_000).toISOString().replace('.000Z', 'Z');
+      }
+      sessions.push({ source, start, end });
+      renderList();
+    };
+
+    let lastLines = [];
+    $('merge').onclick = () => {
+      lastLines = logMerge(sessions);
+      const done = JSON.parse(lastLines[lastLines.length - 1]);
+      $('merged').innerHTML = '';
+      lastLines.slice(1, -1).forEach((line) => {
+        const e = JSON.parse(line);
+        const li = document.createElement('li');
+        li.textContent = `${clockOf(e.start)}-${clockOf(e.end)}`;
+        $('merged').appendChild(li);
+      });
+      $('total').textContent = done.totalMinutes;
+      $('overlaps').textContent = done.overlapsMerged;
+      $('preview').hidden = false;
+      $('final').hidden = true;
+    };
+
+    $('confirm').onclick = () => {
+      const done = JSON.parse(lastLines[lastLines.length - 1]);
+      const merged = lastLines.slice(1, -1).map((line) => {
+        const { start, end } = JSON.parse(line);
+        return { start, end };
+      });
+      $('result').textContent = JSON.stringify(
+        { sessions: merged, totalMinutes: done.totalMinutes, overlapsMerged: done.overlapsMerged },
+        null,
+        2,
+      );
+      $('logs').textContent = lastLines.join('\n');
+      $('final').hidden = false;
+    };
+
+    renderList();
+
+    // ---- source tab ----
+    const load = async (path, el) => {
+      try {
+        const r = await fetch(path);
+        $(el).textContent = r.ok ? await r.text() : `could not load ${path}`;
+      } catch (e) {
+        $(el).textContent = `could not load ${path}: ${e}`;
+      }
+    };
+    load('../src/types.ts', 'src-types');
+    load('../src/mergeSleep.ts', 'src-merge');
+    load('../src/logMerge.ts', 'src-logmerge');
+
+    // ---- scenarios + logs tabs (add new filenames here as fixtures land) ----
+    const scenarioFiles = [
+      'separate-sessions.approved.md',
+      'partial-overlap.approved.md',
+      'exact-duplicate.approved.md',
+      'contained-session.approved.md',
+      'touching-sessions.approved.md',
+      'chain-of-three.approved.md',
+    ];
+    const logFiles = ['exact-duplicate.approved.log'];
+    const fillList = (files, base, listEl, viewEl) => {
+      const box = $(listEl);
+      files.forEach((f) => {
+        const b = document.createElement('button');
+        b.textContent = f;
+        b.onclick = async () => {
+          const r = await fetch(`${base}${f}`);
+          $(viewEl).textContent = r.ok ? await r.text() : `could not load ${f}`;
+        };
+        box.appendChild(b);
+      });
+    };
+    fillList(scenarioFiles, '../scenarios/', 'scenariolist', 'scenarioview');
+    fillList(logFiles, '../logs/', 'loglist', 'logview');
+  </script>
+</body>
+</html>
