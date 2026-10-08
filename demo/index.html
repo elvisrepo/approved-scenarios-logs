@@ -72,6 +72,20 @@
       <pre id="result"></pre>
       <h2>Logs</h2>
       <pre id="logs"></pre>
+      <h2>Approved file</h2>
+      <p>Save this text as <code>scenarios/&lt;name&gt;.approved.md</code> and it becomes a test — the runner picks it up with zero code changes.</p>
+      <pre id="approved"></pre>
+    </div>
+
+    <div id="sweep">
+      <h2>Full runner sweep</h2>
+      <p>What <code>tests/scenarios.test.ts</code> does on <code>npm test</code>: collect every <code>*.approved.md</code>, run each through parse → <code>mergeSleep</code> → render → diff. Run it clean, inject the classic 420 mistake into chain-of-three, watch the error, then apply the human fix.</p>
+      <div class="row">
+        <button id="sweep-run">Run full sweep</button>
+        <button id="sweep-break">Inject 420 mistake</button>
+        <button id="sweep-fix">Apply human fix</button>
+      </div>
+      <pre id="sweep-out">press Run full sweep</pre>
     </div>
   </section>
 
@@ -256,6 +270,13 @@
         2,
       );
       $('logs').textContent = lastLines.join('\n');
+      // What this run would look like as an approved file (renderScenario
+      // rebuilds the exact format the runner diffs against).
+      const inputLines = sessions.map((s) => `${s.source} ${clockOf(s.start)}-${clockOf(s.end)}`);
+      $('approved').textContent = renderScenario(
+        { title: 'Manual demo session', inputLines, sessions },
+        { sessions: merged, totalMinutes: done.totalMinutes, overlapsMerged: done.overlapsMerged },
+      );
       $('final').hidden = false;
     };
 
@@ -391,6 +412,23 @@
     pick.value = 'chain-of-three.approved.md';
     loadPick();
 
+    // Line diff helper: '  ' context, '- ' file belief, '+ ' code output
+    const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    const lineDiff = (expectedText, actualText) => {
+      const a = normalizeText(expectedText).split('\n');
+      const b = actualText.split('\n');
+      const out = [];
+      const n = Math.max(a.length, b.length);
+      for (let i = 0; i < n; i++) {
+        if (a[i] === b[i]) out.push('  ' + esc(a[i] ?? ''));
+        else {
+          if (a[i] !== undefined) out.push('- ' + esc(a[i]));
+          if (b[i] !== undefined) out.push('+ ' + esc(b[i]));
+        }
+      }
+      return out;
+    };
+
     $('replay-run').onclick = () => {
       const text = $('replay-file').value;
       let scenario;
@@ -406,20 +444,58 @@
         $('replay-out').innerHTML = `<span class="pass">PASS</span> — belief and code agree`;
         return;
       }
-      // Line diff: '  ' context, '- ' file belief, '+ ' code output
-      const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
-      const a = normalizeText(text).split('\n');
-      const b = actual.split('\n');
-      const out = ['<span class="fail">FAIL</span> — every wrong line at once:'];
-      const n = Math.max(a.length, b.length);
-      for (let i = 0; i < n; i++) {
-        if (a[i] === b[i]) out.push('  ' + esc(a[i] ?? ''));
+      $('replay-out').innerHTML =
+        ['<span class="fail">FAIL</span> — every wrong line at once:', ...lineDiff(text, actual)].join('\n');
+    };
+
+    // ---- full sweep: what tests/scenarios.test.ts does file by file ----
+    const sweepOverrides = {};
+    const runSweep = async () => {
+      const out = [];
+      let pass = 0;
+      let fail = 0;
+      for (const f of scenarioFiles) {
+        let text;
+        if (sweepOverrides[f] !== undefined) text = sweepOverrides[f];
         else {
-          if (a[i] !== undefined) out.push('- ' + esc(a[i]));
-          if (b[i] !== undefined) out.push('+ ' + esc(b[i]));
+          const r = await fetch(`../scenarios/${f}`);
+          text = r.ok ? await r.text() : null;
+        }
+        if (text === null) {
+          out.push(`✗ ${f} — could not load`);
+          fail++;
+          continue;
+        }
+        try {
+          const s = parseScenario(text);
+          const actual = renderScenario(s, mergeSleep(s.sessions));
+          if (actual === normalizeText(text)) {
+            out.push(`✓ ${f}`);
+            pass++;
+          } else {
+            out.push(`✗ ${f} — belief vs code:`);
+            lineDiff(text, actual).forEach((l) => out.push(`    ${l}`));
+            fail++;
+          }
+        } catch (e) {
+          out.push(`✗ ${f} — parse: ${e.message ?? e}`);
+          fail++;
         }
       }
-      $('replay-out').innerHTML = out.join('\n');
+      out.push(`— ${pass} passed, ${fail} failed —`);
+      $('sweep-out').textContent = out.join('\n');
+    };
+    $('sweep-run').onclick = runSweep;
+    $('sweep-break').onclick = async () => {
+      const r = await fetch('../scenarios/chain-of-three.approved.md');
+      const text = r.ok ? await r.text() : '';
+      sweepOverrides['chain-of-three.approved.md'] = breakIt(text, 'chain-of-three.approved.md');
+      runSweep();
+    };
+    $('sweep-fix').onclick = () => {
+      // The human (or agent, with approval) corrects the belief — same as our 420 → 360 fix.
+      delete sweepOverrides['chain-of-three.approved.md'];
+      runSweep();
     };
 
     $('replay-fix').onclick = () => {
