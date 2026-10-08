@@ -57,13 +57,7 @@
   <section id="tab-demo">
     <p>One "night" runs 18:00 → 18:00 next day. Times use that mapping, same as the approved scenarios.</p>
     <fieldset>
-      <legend>Add a sleep session</legend>
-      <div class="row">
-        <label>Source <input id="source" value="fitbit" size="8" /></label>
-        <label>Start <input id="start" value="22:00" size="5" placeholder="HH:MM" /></label>
-        <label>End <input id="end" value="06:00" size="5" placeholder="HH:MM" /></label>
-        <button id="add">Add session</button>
-      </div>
+      <legend>Sleep sessions</legend>
       <div class="row">
         <label>Or load preset
           <select id="preset-pick"></select>
@@ -212,17 +206,7 @@
       };
     });
 
-    // ---- demo tab (same night mapping as tests/support/scenarioFormat.ts) ----
-    const BASE_MS = Date.parse('2026-10-01T18:00:00Z');
-    const NIGHT_STARTS_AT = 18 * 60;
-    const MINUTES_PER_DAY = 24 * 60;
-    const intoNight = (h, m) =>
-      ((((h * 60 + m - NIGHT_STARTS_AT) % MINUTES_PER_DAY) + MINUTES_PER_DAY) % MINUTES_PER_DAY);
-    const isoAt = (v) => new Date(BASE_MS + v * 60_000).toISOString().replace('.000Z', 'Z');
-    const toIso = (clock) => {
-      const [h, m] = clock.split(':').map(Number);
-      return isoAt(intoNight(h, m));
-    };
+    // ---- demo tab: sessions come from approved presets only ----
     const clockOf = (iso) => iso.slice(11, 16);
 
     const sessions = [];
@@ -231,31 +215,15 @@
     function renderList() {
       $('count').textContent = sessions.length;
       $('list').innerHTML = '';
-      sessions.forEach((s, i) => {
+      sessions.forEach((s) => {
         const li = document.createElement('li');
-        li.textContent = `${s.source} ${clockOf(s.start)}-${clockOf(s.end)} `;
-        const rm = document.createElement('button');
-        rm.textContent = 'remove';
-        rm.onclick = () => { sessions.splice(i, 1); renderList(); };
-        li.appendChild(rm);
+        li.textContent = `${s.source} ${clockOf(s.start)}-${clockOf(s.end)}`;
         $('list').appendChild(li);
       });
       $('merge').disabled = sessions.length === 0;
       $('preview').hidden = true;
       $('final').hidden = true;
     }
-
-    $('add').onclick = () => {
-      const source = $('source').value.trim() || 'unknown';
-      let start = toIso($('start').value);
-      let end = toIso($('end').value);
-      if (end === start) { alert('Start and end must differ'); return; }
-      if (end < start) {
-        end = new Date(Date.parse(end) + MINUTES_PER_DAY * 60_000).toISOString().replace('.000Z', 'Z');
-      }
-      sessions.push({ source, start, end });
-      renderList();
-    };
 
     let lastLines = [];
     $('merge').onclick = () => {
@@ -390,7 +358,12 @@
       sessions.length = 0;
       parsed.sessions.forEach((s) => sessions.push(s));
       renderList();
+      // The sweep injects into the same file the demo is showing.
+      if ($('sweep-pick')) $('sweep-pick').value = presetPick.value;
     };
+    // Preloaded on arrival: exact-duplicate.
+    presetPick.value = 'exact-duplicate.approved.md';
+    $('preset-load').onclick();
 
     // ---- red → green replay: the same steps as tests/scenarios.test.ts:26-30 ----
     // One classic mistake per scenario: [correct text, wrong text] swaps.
