@@ -89,11 +89,22 @@
       <summary>logMerge — the logging seam (still pure: returns lines) <span class="file">src/logMerge.ts</span></summary>
       <pre class="code" id="src-logmerge">loading…</pre>
     </details>
+    <details>
+      <summary>scenarios.test.ts — the runner, written once and reviewed closely <span class="file">tests/scenarios.test.ts</span></summary>
+      <pre class="code" id="src-runner">loading…</pre>
+    </details>
   </section>
 
   <section id="tab-scenarios" hidden>
     <h2>Approved scenarios</h2>
-    <p>Each file is input + expected output in domain language. The runner (<code>tests/scenarios.test.ts</code>) parses, executes, renders actual back to this format, and diffs. Pick a file to view it exactly as the runner sees it.</p>
+    <p>Each file is input + expected output in domain language. Pick a file to view it exactly as the runner sees it.</p>
+    <h3>How these files get tested</h3>
+    <p>The runner (<code>tests/scenarios.test.ts</code>, full source in the Source code tab) discovers every <code>scenarios/*.approved.md</code> at collection time — a new test case is a new file, this code never changes. Per file, three steps:</p>
+    <ol>
+      <li><strong>Parse</strong> (<code>scenarios.test.ts:23</code>) — <code>parseScenario</code> reads the input and demands a <code>## Result</code>; hollow files throw here, before the code runs.</li>
+      <li><strong>Execute</strong> (<code>scenarios.test.ts:26</code>) — <code>mergeSleep</code> runs on the file's input.</li>
+      <li><strong>Render + diff</strong> (<code>scenarios.test.ts:30</code>) — the actual result is rebuilt into the same markdown and compared to the file in the suite's only assertion.</li>
+    </ol>
     <div class="row">
       <label>View approved file
         <select id="scenario-view-pick"></select>
@@ -288,6 +299,7 @@
     loadCode('../src/types.ts', 'src-types');
     loadCode('../src/mergeSleep.ts', 'src-merge');
     loadCode('../src/logMerge.ts', 'src-logmerge');
+    loadCode('../tests/scenarios.test.ts', 'src-runner');
 
     // ---- scenarios + logs tabs (add new filenames here as fixtures land) ----
     const scenarioFiles = [
@@ -323,6 +335,8 @@
       const r = await fetch(`../scenarios/${viewPick.value}`);
       $('scenarioview').textContent = r.ok ? await r.text() : `could not load ${viewPick.value}`;
     };
+    viewPick.value = 'chain-of-three.approved.md';
+    viewPick.onchange();
 
     // ---- red → green replay: the same steps as tests/scenarios.test.ts:26-30 ----
     // One classic mistake per scenario: [correct text, wrong text] swaps.
