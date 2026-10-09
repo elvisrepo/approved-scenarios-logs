@@ -17,6 +17,10 @@
     .row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
     button { margin: 0.25rem 0.25rem 0.25rem 0; }
     iframe.diagram { width: 100%; height: 720px; border: 1px solid #ccc; }
+    iframe.loop { width: 100%; height: 420px; border: 0; }
+    #loop-wrap { position: sticky; top: 0; z-index: 5; background: #ffffff; border: 1px solid #ccc; border-radius: 6px; padding: 0.5rem 0.75rem; }
+    #loop-wrap h2 { margin: 0 0 0.25rem 0; font-size: 1rem; }
+    #loop-wrap p { margin: 0 0 0.4rem 0; font-size: 0.85rem; color: #555; }
     .filelist button { display: block; margin: 0.15rem 0; }
     .sidebyside { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
     @media (max-width: 700px) { .sidebyside { grid-template-columns: 1fr; } }
@@ -55,7 +59,25 @@
   </nav>
 
   <section id="tab-demo">
+    <div id="loop-wrap">
+      <h2>Runner loop <button id="loop-reset" title="Back to the full loop">Reset view</button></h2>
+      <p>Spotlighted as you work: preset → file, Merge → execution, red diffs → diff gate, fixes → file again. Focusing pans the camera — Reset brings the full loop back.</p>
+      <iframe id="loop-diagram" class="loop" src="../docs/approved-scenarios-runner.workflow.html?embed=1" title="Approved scenarios runner loop"></iframe>
+    </div>
+
     <p>One "night" runs 18:00 → 18:00 next day. Times use that mapping, same as the approved scenarios.</p>
+
+    <div id="tour" class="row">
+      <button id="tour-file">1 · Approved .md file</button>
+      <button id="tour-run">2 · Execute mergeSleep</button>
+      <button id="tour-sweep">3 · Diff sweep</button>
+      <button id="tour-reset">Reset tour</button>
+    </div>
+
+    <div id="stage-file" hidden>
+    <h2>Approved file</h2>
+    <p>Everything starts here — the sessions below, the runner, and every diff all read this file.</p>
+    <pre id="demo-file">loading…</pre>
     <fieldset>
       <legend>Sleep sessions</legend>
       <div class="row">
@@ -67,6 +89,9 @@
     </fieldset>
     <h2>Sessions (<span id="count">0</span>)</h2>
     <ul id="list"></ul>
+    </div>
+
+    <div id="stage-run" hidden>
     <button id="merge" disabled>Merge</button>
     <div id="preview" hidden>
       <h2>Merged preview</h2>
@@ -83,8 +108,9 @@
       <p>Save this text as <code>scenarios/&lt;name&gt;.approved.md</code> and it becomes a test — the runner picks it up with zero code changes.</p>
       <pre id="approved"></pre>
     </div>
+    </div>
 
-    <div id="sweep">
+    <div id="sweep" hidden>
       <h2>Full runner sweep</h2>
       <p>What <code>tests/scenarios.test.ts</code> does on <code>npm test</code>: collect every <code>*.approved.md</code>, run each through parse → <code>mergeSleep</code> → render → diff. Run it clean, inject any file's classic mistake, watch the error, then apply the human fix.</p>
       <div class="row">
@@ -212,6 +238,43 @@
     const sessions = [];
     const $ = (id) => document.getElementById(id);
 
+    // Spotlight a node in the embedded runner loop (hash-only change: no reload).
+    const loopBase = '../docs/approved-scenarios-runner.workflow.html?embed=1';
+    function focusLoop(node) {
+      const frame = $('loop-diagram');
+      if (frame) frame.src = `${loopBase}#focus=${node}`;
+    }
+    $('loop-reset').onclick = () => {
+      const frame = $('loop-diagram');
+      if (frame) frame.src = loopBase;
+    };
+
+    // ---- guided tour: reveal the demo stage by stage, following the loop ----
+    $('tour-file').onclick = () => {
+      $('stage-file').hidden = false;
+      focusLoop('fixture');
+    };
+    $('tour-run').onclick = () => {
+      if (sessions.length === 0) return;
+      $('stage-file').hidden = false;
+      $('stage-run').hidden = false;
+      $('merge').onclick();
+      $('confirm').onclick();
+    };
+    $('tour-sweep').onclick = () => {
+      $('stage-file').hidden = false;
+      $('stage-run').hidden = false;
+      $('sweep').hidden = false;
+      runSweep();
+    };
+    $('tour-reset').onclick = () => {
+      $('stage-file').hidden = true;
+      $('stage-run').hidden = true;
+      $('sweep').hidden = true;
+      const frame = $('loop-diagram');
+      if (frame) frame.src = loopBase;
+    };
+
     function renderList() {
       $('count').textContent = sessions.length;
       $('list').innerHTML = '';
@@ -240,6 +303,7 @@
       $('overlaps').textContent = done.overlapsMerged;
       $('preview').hidden = false;
       $('final').hidden = true;
+      focusLoop('execute');
     };
 
     $('confirm').onclick = () => {
@@ -254,6 +318,7 @@
         2,
       );
       $('logs').textContent = lastLines.join('\n');
+      focusLoop('render');
       // What this run would look like as an approved file (renderScenario
       // rebuilds the exact format the runner diffs against).
       const inputLines = sessions.map((s) => `${s.source} ${clockOf(s.start)}-${clockOf(s.end)}`);
@@ -351,19 +416,25 @@
       o.textContent = f.replace('.approved.md', '');
       presetPick.appendChild(o);
     });
-    $('preset-load').onclick = async () => {
+    const loadPreset = async (spotlight) => {
       const r = await fetch(`../scenarios/${presetPick.value}`);
       if (!r.ok) return;
-      const parsed = parseScenario(await r.text());
+      const text = await r.text();
+      $('demo-file').textContent = text;
+      const parsed = parseScenario(text);
       sessions.length = 0;
       parsed.sessions.forEach((s) => sessions.push(s));
       renderList();
       // The sweep injects into the same file the demo is showing.
       if ($('sweep-pick')) $('sweep-pick').value = presetPick.value;
+      // Spotlighting pans the camera, so only do it on explicit clicks —
+      // never on page load, where the full loop must stay visible.
+      if (spotlight) focusLoop('fixture');
     };
+    $('preset-load').onclick = () => loadPreset(true);
     // Preloaded on arrival: exact-duplicate.
     presetPick.value = 'exact-duplicate.approved.md';
-    $('preset-load').onclick();
+    loadPreset(false);
 
     // ---- red → green replay: the same steps as tests/scenarios.test.ts:26-30 ----
     // One classic mistake per scenario: [correct text, wrong text] swaps.
@@ -458,11 +529,13 @@
       const actual = renderScenario(scenario, mergeSleep(scenario.sessions));
       if (actual === normalizeText(text)) {
         $('replay-out').innerHTML = `<span class="pass">PASS</span> — belief and code agree`;
+        focusLoop('pass');
         return;
       }
       $('replay-out').innerHTML =
         '<span class="fail">FAIL</span> — belief on the left, code on the right:' +
         sideBySide(text, actual);
+      focusLoop('compare');
     };
 
     // Fixed-file view: left = corrected file, rows the human changed tagged
@@ -536,6 +609,7 @@
       }
       out.push(`— ${counts.pass} passed, ${counts.fail} failed —`);
       $('sweep-out').innerHTML = out.join('\n');
+      focusLoop(counts.fail > 0 ? 'compare' : 'pass');
     };
     $('sweep-run').onclick = runSweep;
     $('sweep-break').onclick = async () => {
@@ -565,10 +639,12 @@
       }
       out.push(`— ${counts.pass} passed, ${counts.fail} failed —`);
       $('sweep-out').innerHTML = out.join('\n');
+      focusLoop('pass');
     };
 
     $('replay-fix').onclick = () => {
       $('replay-file').value = fixIt($('replay-file').value, currentFile);
+      focusLoop('fixfile');
     };
 
     // ---- side by side: same case, approved file vs traditional assertions ----
