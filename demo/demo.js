@@ -1,0 +1,312 @@
+import { mergeSleep } from './build/mergeSleep.js';
+import { logMerge } from './build/logMerge.js';
+import { normalizeText, parseScenario, renderScenario } from './build/fmt/tests/support/scenarioFormat.js';
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const clock = (iso) => iso.slice(11, 16);
+const duration = (minutes) => `${Math.floor(minutes / 60)}h${minutes % 60 ? ` ${minutes % 60}m` : ''}`;
+const colors = ['#7483bd', '#3091a5', '#b07b3c'];
+const examples = [
+  { file: 'exact-duplicate.approved.md', name: 'Same night, two devices', description: 'Two devices report the same eight hours. Count them once.', reason: 'Two reports of the same night are evidence of one sleep block. Adding their durations would count every minute twice.', changes: [['sessions: 22:00-06:00', 'sessions: 22:00-06:00, 22:00-06:00'], ['total_minutes: 480', 'total_minutes: 960'], ['overlaps_merged: 1', 'overlaps_merged: 0']] },
+  { file: 'partial-overlap.approved.md', name: 'Partly overlapping records', description: 'The phone starts later and ends later. The result covers both records.', reason: 'The shared period is counted once. The union runs from 22:00 to 06:30: 510 minutes, rather than the 960-minute sum of both records.', changes: [['sessions: 22:00-06:30', 'sessions: 22:00-06:00, 22:30-06:30'], ['total_minutes: 510', 'total_minutes: 960'], ['overlaps_merged: 1', 'overlaps_merged: 0']] },
+  { file: 'contained-session.approved.md', name: 'One record inside another', description: 'A shorter phone record sits entirely inside the Fitbit record.', reason: 'The shorter record adds no new minutes. It is absorbed into the outer block, leaving 480 minutes of sleep and one overlap merged.', changes: [['sessions: 22:00-06:00', 'sessions: 22:00-06:00, 23:00-02:00'], ['total_minutes: 480', 'total_minutes: 660'], ['overlaps_merged: 1', 'overlaps_merged: 0']] },
+  { file: 'touching-sessions.approved.md', name: 'Touching is not overlapping', description: 'One record ends exactly when the next starts. They share no minutes.', reason: 'The boundary at 23:00 is a shared instant, not shared sleep time. The blocks stay separate and no overlap is counted.', changes: [['sessions: 22:00-23:00, 23:00-00:00', 'sessions: 22:00-00:00'], ['overlaps_merged: 0', 'overlaps_merged: 1']] },
+  { file: 'chain-of-three.approved.md', name: 'A chain of three overlaps', description: 'Three overlapping records connect into one continuous night.', reason: 'Adding the three input durations gives 420 minutes and double-counts shared time. Their union runs from 22:00 to 04:00: 360 minutes.', changes: [['total_minutes: 360', 'total_minutes: 420']] },
+  { file: 'separate-sessions.approved.md', name: 'Night sleep and a daytime nap', description: 'Separate records stay separate and return in time order.', reason: 'Results are sorted by actual start time. The 23:00 night comes before the 14:00 nap on the next day, even though the nap was listed first.', changes: [['sessions: 23:00-07:00, 14:00-14:45', 'sessions: 14:00-14:45, 23:00-07:00']] },
+];
+const byFile = new Map(examples.map((item) => [item.file, item]));
+const approved = new Map();
+const breakText = (text, file) => byFile.get(file).changes.reduce((copy, [correct, wrong]) => copy.replace(correct, wrong), text);
+async function fetchText(path) {
+  const response = await fetch(path);
+  if (!response.ok) throw new Error(`Could not load ${path} (${response.status}).`);
+  return response.text();
+}
+
+// Native buttons plus the standard arrow/Home/End tab navigation.
+const tabs = [...document.querySelectorAll('[role="tab"]')];
+function activateTab(button, focus = false) {
+  tabs.forEach((tab) => {
+    const active = tab === button;
+    tab.setAttribute('aria-selected', String(active));
+    tab.tabIndex = active ? 0 : -1;
+    $(`tab-${tab.dataset.tab}`).hidden = !active;
+  });
+  if (focus) button.focus();
+}
+tabs.forEach((tab, index) => {
+  tab.addEventListener('click', () => activateTab(tab));
+  tab.addEventListener('keydown', (event) => {
+    let next;
+    if (event.key === 'ArrowRight') next = (index + 1) % tabs.length;
+    if (event.key === 'ArrowLeft') next = (index + tabs.length - 1) % tabs.length;
+    if (event.key === 'Home') next = 0;
+    if (event.key === 'End') next = tabs.length - 1;
+    if (next !== undefined) { event.preventDefault(); activateTab(tabs[next], true); }
+  });
+});
+
+const loopBase = '../docs/approved-scenarios-runner.workflow.html?embed=1';
+let diagramFocus = 'fixture';
+function focusLoop(node) {
+  diagramFocus = node;
+  if ($('loop-wrap').open) $('loop-diagram').src = `${loopBase}#focus=${node}`;
+}
+$('loop-wrap').addEventListener('toggle', () => {
+  if ($('loop-wrap').open) focusLoop(diagramFocus);
+});
+$('loop-reset').addEventListener('click', () => { diagramFocus = ''; $('loop-diagram').src = loopBase; });
+const stepDescriptions = { input: 'Start with an approved example.', run: 'Run the pure merging function.', compare: 'Compare the whole result with the expectation.', review: 'Read the mismatch and review the expectation.' };
+function setStep(step) {
+  document.querySelectorAll('[data-step]').forEach((button) => {
+    if (button.dataset.step === step) button.setAttribute('aria-current', 'step');
+    else button.removeAttribute('aria-current');
+  });
+  $('step-help').textContent = stepDescriptions[step];
+  focusLoop({ input: 'fixture', run: 'execute', compare: 'compare', review: 'decide' }[step]);
+}
+function visitStep(step) {
+  setStep(step);
+  const target = step === 'input' ? $('preset-pick') : step === 'run' ? $('merge') : $('compare-title');
+  target.tabIndex = target.tagName === 'H2' ? -1 : target.tabIndex;
+  target.focus({ preventScroll: true });
+  (step === 'input' ? $('stage-file') : step === 'run' ? $('stage-run') : $('stage-compare')).scrollIntoView({ block: 'start' });
+}
+document.querySelectorAll('[data-step]').forEach((button) => button.addEventListener('click', () => visitStep(button.dataset.step)));
+
+let currentExample = examples[0];
+let currentScenario;
+let currentResult;
+let expectationBroken = false;
+function rangeText(session) {
+  const overnight = session.start.slice(0, 10) !== session.end.slice(0, 10);
+  return `${clock(session.start)}–${clock(session.end)}${overnight ? ' (+1 day)' : ''}`;
+}
+// All rows share one UTC axis; the full range includes the following day's nap.
+function renderTimeline() {
+  const sessions = currentScenario.sessions;
+  const hour = 3_600_000;
+  const start = Math.floor(Math.min(...sessions.map((s) => Date.parse(s.start))) / hour) * hour;
+  const end = Math.ceil(Math.max(...sessions.map((s) => Date.parse(s.end))) / hour) * hour;
+  const position = (ms) => (ms - start) / (end - start) * 100;
+  const firstDay = new Date(start).toISOString().slice(0, 10);
+  const ticks = Array.from({ length: 5 }, (_, i) => {
+    const stamp = new Date(start + (end - start) * i / 4).toISOString();
+    return `<span class="tick" style="left:${i * 25}%">${clock(stamp)}<b>${stamp.slice(0, 10) === firstDay ? 'Day 1' : 'Day 2'}</b></span>`;
+  }).join('');
+  const boundaries = [...new Set(sessions.flatMap((s) => [Date.parse(s.start), Date.parse(s.end)]))].sort((a, b) => a - b);
+  const shared = boundaries.slice(0, -1).flatMap((left, i) => {
+    const right = boundaries[i + 1];
+    return sessions.filter((s) => Date.parse(s.start) <= left && Date.parse(s.end) >= right).length > 1 ? [[left, right]] : [];
+  });
+  const band = ([left, right]) => `<span class="overlap-band" aria-hidden="true" style="left:${position(left)}%;width:${position(right) - position(left)}%"></span>`;
+  const bar = (session, color) => `<span class="sleep-bar" aria-hidden="true" title="${esc(rangeText(session))}" style="--source:${color};left:${position(Date.parse(session.start))}%;width:${position(Date.parse(session.end)) - position(Date.parse(session.start))}%"></span>`;
+  const rows = sessions.map((session, i) => `<div class="timeline-row" role="img" aria-label="${esc(session.source)}: ${esc(rangeText(session))}"><span class="timeline-label" aria-hidden="true">${esc(session.source)}</span><div class="track" aria-hidden="true">${shared.map(band).join('')}${bar(session, colors[i % colors.length])}</div></div>`).join('');
+  const resultDescription = currentResult ? currentResult.sessions.map(rangeText).join(', ') : 'Run the example to see the result';
+  $('timeline').innerHTML = `<div class="axis" aria-hidden="true">${ticks}</div>${rows}<div class="timeline-row result-row" role="img" aria-label="Merged result: ${esc(resultDescription)}"><span class="timeline-label" aria-hidden="true">Result</span><div class="track" aria-hidden="true">${currentResult ? currentResult.sessions.map((s) => bar(s, '#096c65')).join('') : '<span class="track-placeholder">Waiting for a run</span>'}</div></div>`;
+  $('timeline-note').textContent = currentResult ? `Result: ${resultDescription}. Times are UTC.` : 'Day 2 is the following day. Striped areas show time covered by more than one source.';
+}
+
+function fullDiff(expected, actual) {
+  const left = normalizeText(expected).split('\n');
+  const right = normalizeText(actual).split('\n');
+  const count = Math.max(left.length, right.length);
+  const pane = (lines, className) => Array.from({ length: count }, (_, i) => left[i] === right[i] ? esc(lines[i] ?? '') : `<span class="${className}">${esc(lines[i] ?? '')}</span>`).join('\n');
+  return `<div class="diff2"><div><h3>Expected · browser copy</h3><pre>${pane(left, 'hl-del')}</pre></div><div><h3>Actual · function output</h3><pre>${pane(right, 'hl-add')}</pre></div></div>`;
+}
+const outputFields = [['sessions', 'Sleep blocks'], ['total_minutes', 'Minutes asleep'], ['overlaps_merged', 'Overlaps merged']];
+function fieldValue(text, key) { return text.split('\n').find((line) => line.startsWith(`${key}: `))?.slice(key.length + 2) ?? 'Missing expectation'; }
+function comparisonTable(expected, actual) {
+  return `<table class="comparison-table"><caption class="sr-only">Expected and actual merge outputs</caption><thead><tr><th scope="col">Output</th><th scope="col">Expected</th><th scope="col">Actual</th></tr></thead><tbody>${outputFields.map(([key, label]) => {
+    const a = fieldValue(expected, key), b = fieldValue(actual, key);
+    return `<tr class="${a === b ? '' : 'different'}"><th scope="row">${label}${a === b ? '' : ' · mismatch'}</th><td>${esc(a)}</td><td>${esc(b)}</td></tr>`;
+  }).join('')}</tbody></table>`;
+}
+function showComparison(restored = false) {
+  const original = approved.get(currentExample.file);
+  const expected = expectationBroken ? breakText(original, currentExample.file) : original;
+  const actual = renderScenario(currentScenario, currentResult);
+  const matches = normalizeText(expected) === actual;
+  $('comparison-status').textContent = matches ? '✓ PASS · all outputs match' : '✗ FAIL · expectation differs';
+  $('comparison-status').className = `badge ${matches ? 'pass' : 'fail'}`;
+  $('lesson-message').textContent = matches ? (restored ? `The correct expectation passes again. ${currentExample.reason}` : 'The complete rendered file matches the approved example. Now try an incorrect expectation and watch the test catch it.') : `The test caught the mistake. ${currentExample.reason}`;
+  $('comparison').hidden = false;
+  $('comparison').innerHTML = comparisonTable(expected, actual);
+  $('comparison-full').innerHTML = fullDiff(expected, actual);
+  $('comparison-details').hidden = false;
+  $('try-mistake').disabled = !matches;
+  $('restore-expectation').hidden = !expectationBroken;
+  setStep(expectationBroken || restored ? 'review' : 'compare');
+}
+function selectExample() {
+  currentExample = byFile.get($('preset-pick').value);
+  currentScenario = parseScenario(approved.get(currentExample.file));
+  currentResult = undefined;
+  expectationBroken = false;
+  $('demo-file').textContent = approved.get(currentExample.file);
+  $('scenario-description').textContent = currentExample.description;
+  $('list').innerHTML = currentScenario.sessions.map((session, i) => `<li><span class="source-name"><i class="source-dot" style="--source:${colors[i % colors.length]}" aria-hidden="true"></i>${esc(session.source)}</span><span class="session-time">${esc(rangeText(session))}</span></li>`).join('');
+  $('merge').disabled = false;
+  $('result-empty').hidden = false;
+  $('result-summary').hidden = true;
+  $('comparison').hidden = true;
+  $('comparison-status').textContent = 'Not run yet';
+  $('comparison-status').className = 'badge';
+  $('lesson-message').textContent = 'Run the example to compare every result with the approved file.';
+  $('try-mistake').disabled = true;
+  $('restore-expectation').hidden = true;
+  $('comparison-details').hidden = true;
+  $('comparison-details').open = false;
+  $('sweep-pick').value = currentExample.file;
+  setStep('input');
+  renderTimeline();
+}
+function runExample() {
+  if (!currentScenario) return;
+  currentResult = mergeSleep(currentScenario.sessions);
+  $('total').textContent = duration(currentResult.totalMinutes);
+  $('session-count').textContent = currentResult.sessions.length;
+  $('session-label').textContent = currentResult.sessions.length === 1 ? 'merged session' : 'merged sessions';
+  $('overlaps').textContent = currentResult.overlapsMerged;
+  $('overlap-label').textContent = currentResult.overlapsMerged === 1 ? 'overlap merged' : 'overlaps merged';
+  $('result').textContent = JSON.stringify(currentResult, null, 2);
+  $('logs').textContent = logMerge(currentScenario.sessions).join('\n');
+  $('result-empty').hidden = true;
+  $('result-summary').hidden = false;
+  renderTimeline();
+  showComparison();
+}
+$('preset-pick').addEventListener('change', selectExample);
+$('merge').addEventListener('click', runExample);
+$('try-mistake').addEventListener('click', () => { if (!currentResult) return; expectationBroken = true; showComparison(); $('restore-expectation').focus({ preventScroll: true }); });
+$('restore-expectation').addEventListener('click', () => { expectationBroken = false; showComparison(true); $('try-mistake').focus({ preventScroll: true }); });
+
+// Retain the interactive diagram as an optional second route through the demo.
+function bindLoopNodes() {
+  const doc = $('loop-diagram').contentDocument;
+  if (!doc) return;
+  const actions = {
+    fixture: () => visitStep('input'), parse: () => visitStep('input'),
+    execute: () => { runExample(); visitStep('run'); }, render: () => { runExample(); visitStep('compare'); },
+    compare: () => visitStep('compare'), pass: () => visitStep('compare'), decide: () => visitStep('review'),
+    fixfile: () => visitStep('review'), fixcode: () => visitStep('review'),
+  };
+  doc.querySelectorAll('[data-node-id]').forEach((node) => {
+    const action = actions[node.getAttribute('data-node-id')];
+    if (!action || node.dataset.demoBound) return;
+    node.dataset.demoBound = 'true';
+    node.style.cursor = 'pointer';
+    node.setAttribute('role', 'button');
+    node.setAttribute('tabindex', '0');
+    node.setAttribute('aria-label', `Explore ${node.getAttribute('data-node-id')} step`);
+    node.addEventListener('click', action);
+    node.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); action(); } });
+  });
+}
+$('loop-diagram').addEventListener('load', bindLoopNodes);
+bindLoopNodes();
+
+// The sweep uses browser copies and the real parser/render/compare loop.
+const suiteOverrides = new Map();
+function runSweep() {
+  let passed = 0;
+  let failed = 0;
+  $('sweep-out').innerHTML = examples.map((example) => {
+    const text = suiteOverrides.get(example.file) ?? approved.get(example.file);
+    let actual;
+    let error;
+    try { const scenario = parseScenario(text); actual = renderScenario(scenario, mergeSleep(scenario.sessions)); }
+    catch (caught) { error = caught.message; }
+    const matches = !error && actual === normalizeText(text);
+    if (matches) passed++; else failed++;
+    const heading = `<span class="badge ${matches ? 'pass' : 'fail'}">${matches ? '✓ PASS' : '✗ FAIL'}</span><span class="scenario-label">${esc(example.name)}</span>`;
+    return matches ? `<div class="suite-row"><p>${heading}</p></div>` : `<details class="suite-row" open><summary>${heading}</summary><p>${esc(error ?? example.reason)}</p>${error ? '' : comparisonTable(text, actual) + fullDiff(text, actual)}</details>`;
+  }).join('');
+  $('sweep-status').textContent = `${passed} passed · ${failed} failed · ${examples.length} examples checked`;
+  $('sweep-fix').disabled = suiteOverrides.size === 0;
+  focusLoop(failed ? 'compare' : 'pass');
+}
+$('sweep-run').addEventListener('click', runSweep);
+$('sweep-break').addEventListener('click', () => { const file = $('sweep-pick').value; suiteOverrides.set(file, breakText(approved.get(file), file)); runSweep(); });
+$('sweep-fix').addEventListener('click', () => { suiteOverrides.clear(); runSweep(); $('sweep-run').focus({ preventScroll: true }); });
+
+// The reference viewer and editable scenario runner start from passing files.
+function showApproved() { $('scenarioview').textContent = approved.get($('scenario-view-pick').value); }
+function runReplay() {
+  const text = $('replay-file').value;
+  try {
+    const scenario = parseScenario(text);
+    const actual = renderScenario(scenario, mergeSleep(scenario.sessions));
+    const matches = actual === normalizeText(text);
+    $('replay-out').innerHTML = `<p class="badge ${matches ? 'pass' : 'fail'}">${matches ? '✓ PASS · complete file matches' : '✗ FAIL · review the mismatch'}</p>${matches ? '' : comparisonTable(text, actual) + fullDiff(text, actual)}`;
+  } catch (error) {
+    $('replay-out').innerHTML = `<p class="notice error">✗ FAIL · rejected before execution: ${esc(error.message)}</p>`;
+  }
+}
+function selectReplay() { $('replay-file').value = approved.get($('replay-pick').value); runReplay(); }
+$('scenario-view-pick').addEventListener('change', showApproved);
+$('replay-pick').addEventListener('change', selectReplay);
+$('replay-run').addEventListener('click', runReplay);
+$('replay-break').addEventListener('click', () => { $('replay-file').value = breakText($('replay-file').value, $('replay-pick').value); runReplay(); });
+$('replay-fix').addEventListener('click', selectReplay);
+$('replay-file').addEventListener('input', () => { $('replay-out').textContent = 'Copy edited. Run test to check the current expectation.'; });
+
+// Source files are fetched, so displayed code stays in sync with the project.
+const token = /(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|('(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\]|\\.)*`)|\b(import|export|from|function|return|const|let|var|if|else|for|of|new|type|interface|extends|satisfies|throws?)\b|\b(number|string|boolean|void|SleepSession|MergedSession|MergeResult|MergeLogEvent)\b|\b(\d+(?:\.\d+)?)\b|([A-Za-z_$][\w$]*)(?=\s*\()/g;
+function highlight(source) {
+  let html = '', offset = 0;
+  token.lastIndex = 0;
+  for (const match of source.matchAll(token)) {
+    const [word, comment, string, keyword, type, number] = match;
+    html += esc(source.slice(offset, match.index)) + `<span class="tok-${comment ? 'com' : string ? 'str' : keyword ? 'kw' : type ? 'type' : number ? 'num' : 'fn'}">${esc(word)}</span>`;
+    offset = match.index + word.length;
+  }
+  return html + esc(source.slice(offset));
+}
+async function loadReference(path, id, code = false) {
+  try { const text = await fetchText(path); if (code) $(id).innerHTML = highlight(text); else $(id).textContent = text; }
+  catch (error) { $(id).textContent = error.message; }
+}
+Promise.allSettled([
+  ...[['types', 'types'], ['mergeSleep', 'merge'], ['logMerge', 'logmerge']].map(([file, id]) => loadReference(`../src/${file}.ts`, `src-${id}`, true)),
+  loadReference('../tests/scenarios.test.ts', 'src-runner', true),
+  loadReference('../logs/exact-duplicate.approved.log', 'logview'),
+  loadReference('../scenarios/chain-of-three.approved.md', 'side-md'),
+]);
+$('loglist').innerHTML = '<button id="reload-log">Exact duplicate · approved log</button>';
+$('reload-log').addEventListener('click', () => loadReference('../logs/exact-duplicate.approved.log', 'logview'));
+$('side-code').textContent = `it('chain of three overlapping sessions becomes one', () => {
+  const result = mergeSleep([
+    { source: 'fitbit', start: '2026-10-01T22:00:00Z', end: '2026-10-02T00:00:00Z' },
+    { source: 'phone', start: '2026-10-01T23:30:00Z', end: '2026-10-02T02:00:00Z' },
+    { source: 'watch', start: '2026-10-02T01:30:00Z', end: '2026-10-02T04:00:00Z' },
+  ]);
+  expect(result.sessions).toEqual([
+    { start: '2026-10-01T22:00:00Z', end: '2026-10-02T04:00:00Z' },
+  ]);
+  expect(result.totalMinutes).toBe(360);
+  expect(result.overlapsMerged).toBe(2);
+});`;
+
+const loaded = await Promise.allSettled(examples.map(async (example) => {
+  const text = await fetchText(`../scenarios/${example.file}`);
+  parseScenario(text);
+  approved.set(example.file, text);
+}));
+const failure = loaded.find((result) => result.status === 'rejected');
+if (failure) {
+  $('load-error').hidden = false;
+  $('load-error').textContent = `${failure.reason.message} Serve the project root over HTTP, then reload the page.`;
+  $('scenario-description').textContent = 'Examples could not be loaded.';
+  ['sweep-run', 'sweep-break', 'sweep-pick'].forEach((id) => { $(id).disabled = true; });
+} else {
+  ['preset-pick', 'sweep-pick', 'scenario-view-pick', 'replay-pick'].forEach((id) => {
+    $(id).innerHTML = examples.map((example) => `<option value="${example.file}">${esc(example.name)}</option>`).join('');
+    $(id).disabled = false;
+  });
+  ['replay-run', 'replay-break', 'replay-fix', 'sweep-run', 'sweep-break'].forEach((id) => { $(id).disabled = false; });
+  selectExample();
+  showApproved();
+  selectReplay();
+}

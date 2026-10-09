@@ -3,130 +3,87 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Sleep Merger — pattern showcase</title>
-  <style>
-    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
-    nav button { margin-right: 0.25rem; padding: 0.4rem 0.8rem; }
-    nav button[aria-selected="true"] { font-weight: bold; }
-    section { margin-top: 1rem; }
-    fieldset { margin-bottom: 1rem; }
-    input { margin-right: 0.5rem; }
-    ul { padding-left: 1.2rem; }
-    li { margin: 0.25rem 0; }
-    pre { background: #f4f4f4; padding: 0.75rem; overflow-x: auto; }
-    .row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
-    button { margin: 0.25rem 0.25rem 0.25rem 0; }
-    iframe.diagram { width: 100%; height: 720px; border: 1px solid #ccc; }
-    iframe.loop { width: 100%; height: 420px; border: 0; }
-    #loop-wrap { position: sticky; top: 0; z-index: 5; background: #ffffff; border: 1px solid #ccc; border-radius: 6px; padding: 0.5rem 0.75rem; }
-    #loop-wrap h2 { margin: 0 0 0.25rem 0; font-size: 1rem; }
-    #loop-wrap p { margin: 0 0 0.4rem 0; font-size: 0.85rem; color: #555; }
-    .filelist button { display: block; margin: 0.15rem 0; }
-    .sidebyside { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-    @media (max-width: 700px) { .sidebyside { grid-template-columns: 1fr; } }
-    textarea { width: 100%; max-width: 560px; font-family: monospace; }
-    .pass { color: #087f69; font-weight: bold; }
-    .fail { color: #b32f50; font-weight: bold; }
-    .diff2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin: 0.5rem 0; }
-    @media (max-width: 700px) { .diff2 { grid-template-columns: 1fr; } }
-    .diff2 h4 { margin: 0 0 0.25rem 0; font-size: 0.9rem; }
-    .diff2 pre { margin: 0; }
-    .hl-del { background: #ffd7dc; display: block; }
-    .hl-add { background: #d3f0e0; display: block; }
-    .hl-fixed { background: #2f9e6e; color: #ffffff; display: block; }
-    details { margin-bottom: 0.75rem; border: 1px solid #3c3c3c; border-radius: 6px; }
-    summary { cursor: pointer; padding: 0.6rem 0.8rem; font-size: 1.1rem; font-weight: bold; background: #f4f4f4; border-radius: 6px; }
-    details[open] summary { border-radius: 6px 6px 0 0; }
-    summary .file { font-weight: normal; font-size: 0.85rem; color: #666; font-family: monospace; }
-    pre.code { margin: 0; border-radius: 0 0 6px 6px; background: #1e1e1e; color: #d4d4d4; }
-    pre.code .tok-com { color: #6a9955; }
-    pre.code .tok-str { color: #ce9178; }
-    pre.code .tok-kw { color: #569cd6; }
-    pre.code .tok-type { color: #4ec9b0; }
-    pre.code .tok-num { color: #b5cea8; }
-    pre.code .tok-fn { color: #dcdcaa; }
-  </style>
+  <title>Sleep Merger — see the overlap</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23172638'/%3E%3Cpath d='M22 6a11 11 0 1 0 4 18A10 10 0 0 1 22 6' fill='%23a9e6d8'/%3E%3C/svg%3E" />
+  <meta name="theme-color" content="#172638" />
+  <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-  <h1>Sleep Merger — pattern showcase</h1>
-  <nav role="tablist">
-    <button data-tab="demo" aria-selected="true">Demo</button>
-    <button data-tab="source" aria-selected="false">Source code</button>
-    <button data-tab="scenarios" aria-selected="false">Scenarios</button>
-    <button data-tab="logs" aria-selected="false">Logs</button>
-    <button data-tab="diagram" aria-selected="false">Runner diagram</button>
-    <button data-tab="patterns" aria-selected="false">Patterns</button>
-  </nav>
-
-  <section id="tab-demo">
-    <div id="loop-wrap">
-      <h2>Runner loop <button id="loop-reset" title="Back to the full loop">Reset view</button></h2>
-      <p>Spotlighted as you work: preset → file, Merge → execution, red diffs → diff gate, fixes → file again. Focusing pans the camera — Reset brings the full loop back.</p>
-      <iframe id="loop-diagram" class="loop" src="../docs/approved-scenarios-runner.workflow.html?embed=1" title="Approved scenarios runner loop"></iframe>
+  <header class="site-header">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">☾</span> Sleep Merger <span class="eyebrow">A testing playground</span></div>
+    <nav class="tabs" role="tablist" aria-label="Explore the project">
+      <button id="nav-demo" role="tab" aria-controls="tab-demo" aria-selected="true" data-tab="demo">Playground</button>
+      <button id="nav-scenarios" role="tab" aria-controls="tab-scenarios" aria-selected="false" tabindex="-1" data-tab="scenarios">Scenarios</button>
+      <button id="nav-logs" role="tab" aria-controls="tab-logs" aria-selected="false" tabindex="-1" data-tab="logs">Logs</button>
+      <button id="nav-source" role="tab" aria-controls="tab-source" aria-selected="false" tabindex="-1" data-tab="source">Source code</button>
+      <button id="nav-diagram" role="tab" aria-controls="tab-diagram" aria-selected="false" tabindex="-1" data-tab="diagram">Runner diagram</button>
+      <button id="nav-patterns" role="tab" aria-controls="tab-patterns" aria-selected="false" tabindex="-1" data-tab="patterns">Patterns</button>
+    </nav>
+  </header>
+  <main>
+  <noscript><p class="notice">Enable JavaScript to run the examples and explore the timeline.</p></noscript>
+  <section id="tab-demo" role="tabpanel" aria-labelledby="nav-demo">
+    <div class="intro"><p class="eyebrow">One night. Several sources. One clear result.</p><h1>See the overlap.<br>Trust the result.</h1><p>Combine sleep records, compare the result with an approved example, and discover how a readable test catches a mistake.</p></div>
+    <nav class="steps" aria-label="Example steps">
+      <button data-step="input" aria-current="step"><span>1</span> Input</button>
+      <button data-step="run"><span>2</span> Run</button>
+      <button data-step="compare"><span>3</span> Compare</button>
+      <button data-step="review"><span>4</span> Review</button>
+      <p id="step-help">Start with an approved example.</p>
+    </nav>
+    <div id="load-error" class="notice error" role="alert" hidden></div>
+    <div class="workspace">
+      <section class="card input-card" id="stage-file" aria-labelledby="input-title">
+        <div class="card-heading"><div><p class="eyebrow">01 / Input</p><h2 id="input-title">Choose a night</h2></div><span class="badge">Approved example</span></div>
+        <label for="preset-pick">Sleep scenario</label><select id="preset-pick" disabled></select>
+        <p id="scenario-description" class="muted">Loading the example…</p>
+        <ul id="list" class="session-list" aria-label="Input sleep records"></ul>
+        <button id="merge" class="primary wide" disabled>Run example <span aria-hidden="true">→</span></button>
+        <p class="micro">Runs the same pure function as the tests.</p>
+        <details><summary>View approved Markdown</summary><pre id="demo-file">Loading…</pre></details>
+      </section>
+      <section class="card timeline-card" id="stage-run" aria-labelledby="timeline-title">
+        <div class="card-heading"><div><p class="eyebrow">02 / Run</p><h2 id="timeline-title">One shared timeline</h2></div><span class="badge subtle">UTC</span></div>
+        <p class="muted">Each source gets a row. The result counts every minute once.</p>
+        <div class="timeline-key"><span><i class="key-input"></i> Source record</span><span><i class="key-overlap"></i> Shared time</span><span><i class="key-result"></i> Merged result</span></div>
+        <div id="timeline" class="timeline" aria-label="Sleep records and merged result"></div>
+        <p id="timeline-note" class="micro">Times after midnight belong to the next day.</p>
+        <div id="result-empty" class="empty-result">Ready when you are. Run the example to see the merged night.</div>
+        <div id="result-summary" hidden>
+          <div class="metrics" aria-label="Merge summary">
+            <div><strong id="total">—</strong><span>time asleep</span></div>
+            <div><strong id="session-count">—</strong><span id="session-label">merged sessions</span></div>
+            <div><strong id="overlaps">—</strong><span id="overlap-label">overlaps merged</span></div>
+          </div>
+          <details><summary>Inspect result and logs</summary><h3>Result JSON</h3><pre id="result"></pre><h3>Captured JSON events</h3><pre id="logs"></pre></details>
+        </div>
+      </section>
     </div>
-
-    <p>One "night" runs 18:00 → 18:00 next day. Times use that mapping, same as the approved scenarios.</p>
-
-    <div id="tour" class="row">
-      <button id="tour-file">1 · Approved .md file</button>
-      <button id="tour-run">2 · Execute mergeSleep</button>
-      <button id="tour-sweep">3 · Diff sweep</button>
-      <button id="tour-reset">Reset tour</button>
-    </div>
-
-    <div id="stage-file" hidden>
-    <h2>Approved file</h2>
-    <p>Everything starts here — the sessions below, the runner, and every diff all read this file.</p>
-    <pre id="demo-file">loading…</pre>
-    <fieldset>
-      <legend>Sleep sessions</legend>
-      <div class="row">
-        <label>Or load preset
-          <select id="preset-pick"></select>
-        </label>
-        <button id="preset-load">Load sessions</button>
-      </div>
-    </fieldset>
-    <h2>Sessions (<span id="count">0</span>)</h2>
-    <ul id="list"></ul>
-    </div>
-
-    <div id="stage-run" hidden>
-    <button id="merge" disabled>Merge</button>
-    <div id="preview" hidden>
-      <h2>Merged preview</h2>
-      <ul id="merged"></ul>
-      <p>Total: <strong id="total"></strong> min · Overlaps merged: <strong id="overlaps"></strong></p>
-      <button id="confirm">Confirm</button>
-    </div>
-    <div id="final" hidden>
-      <h2>Confirmed result</h2>
-      <pre id="result"></pre>
-      <h2>Logs</h2>
-      <pre id="logs"></pre>
-      <h2>Approved file</h2>
-      <p>Save this text as <code>scenarios/&lt;name&gt;.approved.md</code> and it becomes a test — the runner picks it up with zero code changes.</p>
-      <pre id="approved"></pre>
-    </div>
-    </div>
-
-    <div id="sweep" hidden>
-      <h2>Full runner sweep</h2>
-      <p>What <code>tests/scenarios.test.ts</code> does on <code>npm test</code>: collect every <code>*.approved.md</code>, run each through parse → <code>mergeSleep</code> → render → diff. Run it clean, inject any file's classic mistake, watch the error, then apply the human fix.</p>
-      <div class="row">
-        <button id="sweep-run">Run full sweep</button>
-        <label>Inject mistake into
-          <select id="sweep-pick"></select>
-        </label>
-        <button id="sweep-break">Inject mistake</button>
-        <button id="sweep-fix">Apply human fix</button>
-      </div>
-      <pre id="sweep-out">press Run full sweep</pre>
-    </div>
+    <section class="card lesson-card" id="stage-compare" aria-labelledby="compare-title">
+      <div class="card-heading"><div><p class="eyebrow">03 / Compare → 04 / Review</p><h2 id="compare-title">Can the test catch a mistake?</h2></div><span id="comparison-status" class="badge" role="status">Not run yet</span></div>
+      <p id="lesson-message" class="muted" aria-live="polite">Run the example to compare every result with the approved file.</p>
+      <div id="comparison" hidden></div>
+      <div class="actions"><button id="try-mistake" disabled>Try an incorrect expectation</button><button id="restore-expectation" class="primary" hidden>Restore correct expectation</button></div>
+      <p class="micro">This experiment changes a copy in your browser. Approved files on disk stay untouched.</p>
+      <details id="comparison-details" hidden><summary>Inspect the complete file comparison</summary><div id="comparison-full"></div></details>
+    </section>
+    <details class="card diagram-disclosure" id="loop-wrap">
+      <summary>Explore the runner <span class="muted">Follow the same steps in the diagram</span></summary>
+      <p>Click a node to explore its step. The diagram follows your progress through the example.</p>
+      <button id="loop-reset">Show full loop</button>
+      <iframe id="loop-diagram" class="loop" loading="lazy" src="../docs/approved-scenarios-runner.workflow.html?embed=1" title="Interactive approved scenarios runner loop"></iframe>
+    </details>
+    <section class="card" id="sweep" aria-labelledby="sweep-title">
+      <div class="card-heading"><div><p class="eyebrow">Take it further</p><h2 id="sweep-title">Check every approved scenario</h2></div><span class="badge subtle">6 examples</span></div>
+      <p class="muted">The runner discovers each approved file, executes it, and compares the entire result. Here you can try the same loop across all six examples.</p>
+      <div class="actions"><button id="sweep-run" class="primary" disabled>Run all examples</button><label class="inline-label" for="sweep-pick">Experiment with<select id="sweep-pick" disabled></select></label><button id="sweep-break" disabled>Try a mistake</button><button id="sweep-fix" disabled>Restore expectations</button></div>
+      <p class="micro">Mistakes and corrections are browser-only copies.</p>
+      <p id="sweep-status" role="status">No suite run yet.</p><div id="sweep-out"></div>
+    </section>
   </section>
 
-  <section id="tab-source" hidden>
-    <h2>Source code</h2>
+  <section id="tab-source" role="tabpanel" aria-labelledby="nav-source" hidden>
+    <div class="intro"><p class="eyebrow">Under the hood</p><h1>Small functions.<br>Clear responsibilities.</h1><p>The playground uses the real implementation and scenario format, compiled for the browser.</p></div>
     <details>
       <summary>Types — the contract everything agrees on <span class="file">src/types.ts</span></summary>
       <pre class="code" id="src-types">loading…</pre>
@@ -145,8 +102,8 @@
     </details>
   </section>
 
-  <section id="tab-scenarios" hidden>
-    <h2>Approved scenarios</h2>
+  <section id="tab-scenarios" role="tabpanel" aria-labelledby="nav-scenarios" hidden>
+    <div class="intro"><p class="eyebrow">Approved Scenarios</p><h1>Readable examples.<br>Executable expectations.</h1></div>
     <p>Each file is input + expected output in domain language. Pick a file to view it exactly as the runner sees it.</p>
     <h3>How these files get tested</h3>
     <p>The runner (<code>tests/scenarios.test.ts</code>, full source in the Source code tab) discovers every <code>scenarios/*.approved.md</code> at collection time — a new test case is a new file, this code never changes. Per file, three steps:</p>
@@ -162,19 +119,19 @@
     </div>
     <pre id="scenarioview">pick a scenario above</pre>
 
-    <h2>Red → green, live: an incorrect approval</h2>
-    <p>Pick a scenario — each loads with its classic mistake baked in. Press <strong>Run test</strong>: the same parse → execute → render → diff steps as <code>tests/scenarios.test.ts:26-30</code> run in this page. Edit the text to break it yourself, <strong>Apply the fix</strong> (what the human approved), and run again.</p>
+    <h2>Experiment with the expectation</h2>
+    <p>Start with a passing example. Introduce a mistake or edit the browser copy, then run the comparison. Approved files on disk stay untouched.</p>
     <div class="row">
       <label>Load into runner
         <select id="replay-pick"></select>
       </label>
     </div>
-    <textarea id="replay-file" rows="13" cols="60"></textarea>
+    <label for="replay-file">Editable browser copy</label><textarea id="replay-file" rows="13" spellcheck="false"></textarea>
     <div class="row">
-      <button id="replay-run">Run test</button>
-      <button id="replay-fix">Apply the fix</button>
+      <button id="replay-run" class="primary" disabled>Run test</button><button id="replay-break" disabled>Try a mistake</button>
+      <button id="replay-fix" disabled>Restore original example</button>
     </div>
-    <pre id="replay-out">press Run test</pre>
+    <div id="replay-out" role="status"></div>
 
     <h2>Same case, two representations</h2>
     <div class="sidebyside">
@@ -189,21 +146,21 @@
     </div>
   </section>
 
-  <section id="tab-logs" hidden>
-    <h2>Approved logs</h2>
+  <section id="tab-logs" role="tabpanel" aria-labelledby="nav-logs" hidden>
+    <div class="intro"><p class="eyebrow">Approved Logs</p><h1>A captured run.<br>A replayable test.</h1></div>
     <p>Line 1 is the invocation (<code>merge_requested</code> carrying the input sessions); the rest is the expected emitted output. The runner (<code>tests/logs.test.ts</code>) replays line 1 through <code>logMerge</code> and compares every captured line.</p>
     <div class="filelist" id="loglist"></div>
     <pre id="logview">pick a log above</pre>
   </section>
 
-  <section id="tab-diagram" hidden>
-    <h2>Runner loop diagram</h2>
+  <section id="tab-diagram" role="tabpanel" aria-labelledby="nav-diagram" hidden>
+    <div class="intro"><p class="eyebrow">The runner loop</p><h1>From example<br>to evidence.</h1></div>
     <p>Green path down the middle, red decision branch at the diff gate. Built with <a href="https://github.com/tt-a1i/archify">archify</a>.</p>
     <iframe class="diagram" src="../docs/approved-scenarios-runner.workflow.html" title="Approved scenarios runner loop"></iframe>
   </section>
 
-  <section id="tab-patterns" hidden>
-    <h2>The three patterns</h2>
+  <section id="tab-patterns" role="tabpanel" aria-labelledby="nav-patterns" hidden>
+    <div class="intro"><p class="eyebrow">Why this project exists</p><h1>Tests you can<br>actually review.</h1></div>
     <ul>
       <li><strong>Constrained Tests</strong> — the parent. An external DSL + strict parser makes hollow tests impossible, so coverage means something. <a href="https://lexler.github.io/augmented-coding-patterns/patterns/constrained-tests/">pattern page</a> · local write-up: <a href="../docs/constrained-tests-explained.md">docs/constrained-tests-explained.md</a></li>
       <li><strong>Approved Scenarios</strong> — constrained tests optimized for review ease: input + expected output in domain language. <a href="https://lexler.github.io/augmented-coding-patterns/patterns/approved-scenarios/">pattern page</a> · local write-up: <a href="../docs/approved-scenarios-explained.md">docs/approved-scenarios-explained.md</a></li>
@@ -212,457 +169,8 @@
     <p>Rule of the house (<code>AGENTS.md</code>): <code>scenarios/</code> and <code>logs/</code> are approved specification — propose, review, then write; the runner never fixes anything.</p>
   </section>
 
-  <script type="module">
-    import { logMerge } from './build/logMerge.js';
-    import { mergeSleep } from './build/mergeSleep.js';
-    import {
-      normalizeText,
-      parseScenario,
-      renderScenario,
-    } from './build/fmt/tests/support/scenarioFormat.js';
-
-    // ---- tabs ----
-    const tabs = [...document.querySelectorAll('nav button')];
-    tabs.forEach((btn) => {
-      btn.onclick = () => {
-        tabs.forEach((b) => b.setAttribute('aria-selected', String(b === btn)));
-        document.querySelectorAll('body > section').forEach((s) => {
-          s.hidden = s.id !== `tab-${btn.dataset.tab}`;
-        });
-      };
-    });
-
-    // ---- demo tab: sessions come from approved presets only ----
-    const clockOf = (iso) => iso.slice(11, 16);
-
-    const sessions = [];
-    const $ = (id) => document.getElementById(id);
-
-    // Spotlight a node in the embedded runner loop (hash-only change: no reload).
-    const loopBase = '../docs/approved-scenarios-runner.workflow.html?embed=1';
-    function focusLoop(node) {
-      const frame = $('loop-diagram');
-      if (frame) frame.src = `${loopBase}#focus=${node}`;
-    }
-    $('loop-reset').onclick = () => {
-      const frame = $('loop-diagram');
-      if (frame) frame.src = loopBase;
-    };
-
-    // ---- guided tour: reveal the demo stage by stage, following the loop ----
-    $('tour-file').onclick = () => {
-      $('stage-file').hidden = false;
-      focusLoop('fixture');
-    };
-    $('tour-run').onclick = () => {
-      if (sessions.length === 0) return;
-      $('stage-file').hidden = false;
-      $('stage-run').hidden = false;
-      $('merge').onclick();
-      $('confirm').onclick();
-    };
-    $('tour-sweep').onclick = () => {
-      $('stage-file').hidden = false;
-      $('stage-run').hidden = false;
-      $('sweep').hidden = false;
-      runSweep();
-    };
-    $('tour-reset').onclick = () => {
-      $('stage-file').hidden = true;
-      $('stage-run').hidden = true;
-      $('sweep').hidden = true;
-      const frame = $('loop-diagram');
-      if (frame) frame.src = loopBase;
-    };
-
-    function renderList() {
-      $('count').textContent = sessions.length;
-      $('list').innerHTML = '';
-      sessions.forEach((s) => {
-        const li = document.createElement('li');
-        li.textContent = `${s.source} ${clockOf(s.start)}-${clockOf(s.end)}`;
-        $('list').appendChild(li);
-      });
-      $('merge').disabled = sessions.length === 0;
-      $('preview').hidden = true;
-      $('final').hidden = true;
-    }
-
-    let lastLines = [];
-    $('merge').onclick = () => {
-      lastLines = logMerge(sessions);
-      const done = JSON.parse(lastLines[lastLines.length - 1]);
-      $('merged').innerHTML = '';
-      lastLines.slice(1, -1).forEach((line) => {
-        const e = JSON.parse(line);
-        const li = document.createElement('li');
-        li.textContent = `${clockOf(e.start)}-${clockOf(e.end)}`;
-        $('merged').appendChild(li);
-      });
-      $('total').textContent = done.totalMinutes;
-      $('overlaps').textContent = done.overlapsMerged;
-      $('preview').hidden = false;
-      $('final').hidden = true;
-      focusLoop('execute');
-    };
-
-    $('confirm').onclick = () => {
-      const done = JSON.parse(lastLines[lastLines.length - 1]);
-      const merged = lastLines.slice(1, -1).map((line) => {
-        const { start, end } = JSON.parse(line);
-        return { start, end };
-      });
-      $('result').textContent = JSON.stringify(
-        { sessions: merged, totalMinutes: done.totalMinutes, overlapsMerged: done.overlapsMerged },
-        null,
-        2,
-      );
-      $('logs').textContent = lastLines.join('\n');
-      focusLoop('render');
-      // What this run would look like as an approved file (renderScenario
-      // rebuilds the exact format the runner diffs against).
-      const inputLines = sessions.map((s) => `${s.source} ${clockOf(s.start)}-${clockOf(s.end)}`);
-      $('approved').textContent = renderScenario(
-        { title: 'Manual demo session', inputLines, sessions },
-        { sessions: merged, totalMinutes: done.totalMinutes, overlapsMerged: done.overlapsMerged },
-      );
-      $('final').hidden = false;
-    };
-
-    renderList();
-
-    // ---- source tab ----
-    const load = async (path, el) => {
-      try {
-        const r = await fetch(path);
-        $(el).textContent = r.ok ? await r.text() : `could not load ${path}`;
-      } catch (e) {
-        $(el).textContent = `could not load ${path}: ${e}`;
-      }
-    };
-    // Swap the plain-text source blocks for VS Code-style highlighted code.
-    const escHtml = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    const TS_TOKEN =
-      /(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|('(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\]|\\.)*`)|\b(import|export|from|function|return|const|let|var|if|else|for|of|new|type|interface|extends|satisfies|throws?)\b|\b(number|string|boolean|void|SleepSession|MergedSession|MergeResult|MergeLogEvent|ParsedLog|ParsedScenario)\b|\b(\d+(?:\.\d+)?)\b|([A-Za-z_$][\w$]*)(?=\s*\()/g;
-    const highlightTS = (src) => {
-      let html = '';
-      let last = 0;
-      TS_TOKEN.lastIndex = 0;
-      let m;
-      while ((m = TS_TOKEN.exec(src)) !== null) {
-        html += escHtml(src.slice(last, m.index));
-        const [tok, com, str, kw, type, num, fn] = m;
-        const cls = com ? 'tok-com' : str ? 'tok-str' : kw ? 'tok-kw' : type ? 'tok-type' : num ? 'tok-num' : 'tok-fn';
-        html += `<span class="${cls}">${escHtml(tok)}</span>`;
-        last = m.index + tok.length;
-      }
-      return html + escHtml(src.slice(last));
-    };
-    const loadCode = async (path, el) => {
-      try {
-        const r = await fetch(path);
-        $(el).innerHTML = r.ok ? highlightTS(await r.text()) : escHtml(`could not load ${path}`);
-      } catch (e) {
-        $(el).textContent = `could not load ${path}: ${e}`;
-      }
-    };
-    loadCode('../src/types.ts', 'src-types');
-    loadCode('../src/mergeSleep.ts', 'src-merge');
-    loadCode('../src/logMerge.ts', 'src-logmerge');
-    loadCode('../tests/scenarios.test.ts', 'src-runner');
-
-    // ---- scenarios + logs tabs (add new filenames here as fixtures land) ----
-    const scenarioFiles = [
-      'separate-sessions.approved.md',
-      'partial-overlap.approved.md',
-      'exact-duplicate.approved.md',
-      'contained-session.approved.md',
-      'touching-sessions.approved.md',
-      'chain-of-three.approved.md',
-    ];
-    const logFiles = ['exact-duplicate.approved.log'];
-    const fillList = (files, base, listEl, viewEl) => {
-      const box = $(listEl);
-      files.forEach((f) => {
-        const b = document.createElement('button');
-        b.textContent = f;
-        b.onclick = async () => {
-          const r = await fetch(`${base}${f}`);
-          $(viewEl).textContent = r.ok ? await r.text() : `could not load ${f}`;
-        };
-        box.appendChild(b);
-      });
-    };
-    // Viewer: one dropdown over the approved files, as the runner sees them.
-    const viewPick = $('scenario-view-pick');
-    scenarioFiles.forEach((f) => {
-      const o = document.createElement('option');
-      o.value = f;
-      o.textContent = f;
-      viewPick.appendChild(o);
-    });
-    viewPick.onchange = async () => {
-      const r = await fetch(`../scenarios/${viewPick.value}`);
-      $('scenarioview').textContent = r.ok ? await r.text() : `could not load ${viewPick.value}`;
-    };
-    viewPick.value = 'chain-of-three.approved.md';
-    viewPick.onchange();
-
-    // ---- demo presets: load an approved file's sessions into the form ----
-    const presetPick = $('preset-pick');
-    scenarioFiles.forEach((f) => {
-      const o = document.createElement('option');
-      o.value = f;
-      o.textContent = f.replace('.approved.md', '');
-      presetPick.appendChild(o);
-    });
-    const loadPreset = async (spotlight) => {
-      const r = await fetch(`../scenarios/${presetPick.value}`);
-      if (!r.ok) return;
-      const text = await r.text();
-      $('demo-file').textContent = text;
-      const parsed = parseScenario(text);
-      sessions.length = 0;
-      parsed.sessions.forEach((s) => sessions.push(s));
-      renderList();
-      // The sweep injects into the same file the demo is showing.
-      if ($('sweep-pick')) $('sweep-pick').value = presetPick.value;
-      // Spotlighting pans the camera, so only do it on explicit clicks —
-      // never on page load, where the full loop must stay visible.
-      if (spotlight) focusLoop('fixture');
-    };
-    $('preset-load').onclick = () => loadPreset(true);
-    // Preloaded on arrival: exact-duplicate.
-    presetPick.value = 'exact-duplicate.approved.md';
-    loadPreset(false);
-
-    // ---- red → green replay: the same steps as tests/scenarios.test.ts:26-30 ----
-    // One classic mistake per scenario: [correct text, wrong text] swaps.
-    // Verified with the real runner code: correct passes, wrong fails, fix passes.
-    const REPLAY_BREAKS = {
-      'chain-of-three.approved.md': [['total_minutes: 360', 'total_minutes: 420']],
-      'touching-sessions.approved.md': [
-        ['sessions: 22:00-23:00, 23:00-00:00', 'sessions: 22:00-00:00'],
-        ['overlaps_merged: 0', 'overlaps_merged: 1'],
-      ],
-      'exact-duplicate.approved.md': [
-        ['sessions: 22:00-06:00', 'sessions: 22:00-06:00, 22:00-06:00'],
-        ['total_minutes: 480', 'total_minutes: 960'],
-        ['overlaps_merged: 1', 'overlaps_merged: 0'],
-      ],
-      'contained-session.approved.md': [
-        ['sessions: 22:00-06:00', 'sessions: 22:00-06:00, 23:00-02:00'],
-        ['total_minutes: 480', 'total_minutes: 660'],
-        ['overlaps_merged: 1', 'overlaps_merged: 0'],
-      ],
-      'partial-overlap.approved.md': [
-        ['sessions: 22:00-06:30', 'sessions: 22:00-06:00, 22:30-06:30'],
-        ['total_minutes: 510', 'total_minutes: 960'],
-        ['overlaps_merged: 1', 'overlaps_merged: 0'],
-      ],
-      'separate-sessions.approved.md': [
-        ['sessions: 23:00-07:00, 14:00-14:45', 'sessions: 14:00-14:45, 23:00-07:00'],
-      ],
-    };
-    const breakIt = (text, file) =>
-      (REPLAY_BREAKS[file] ?? []).reduce((s, [a, b]) => s.replace(a, b), text);
-    const fixIt = (text, file) =>
-      (REPLAY_BREAKS[file] ?? []).reduce((s, [a, b]) => s.replace(b, a), text);
-
-    // Runner: mistake versions only — the correct ones live in the viewer above.
-    const pick = $('replay-pick');
-    pick.querySelectorAll('option').forEach((o) => o.remove());
-    Object.keys(REPLAY_BREAKS).forEach((f) => {
-      const bad = document.createElement('option');
-      bad.value = f;
-      bad.textContent = `${f} (with classic mistake)`;
-      pick.appendChild(bad);
-    });
-    let currentFile = 'chain-of-three.approved.md';
-    const loadPick = async () => {
-      currentFile = pick.value;
-      const r = await fetch(`../scenarios/${currentFile}`);
-      let text = r.ok ? await r.text() : `could not load ${currentFile}`;
-      $('replay-file').value = breakIt(text, currentFile);
-    };
-    pick.onchange = loadPick;
-    pick.value = 'chain-of-three.approved.md';
-    loadPick();
-
-    // Side-by-side panes: left = approved file (belief), right = actual
-    // rendered result (code). Differing rows are highlighted.
-    const sideBySide = (expectedText, actualText) => {
-      const a = normalizeText(expectedText).split('\n');
-      const b = actualText.split('\n');
-      const left = [];
-      const right = [];
-      const n = Math.max(a.length, b.length);
-      for (let i = 0; i < n; i++) {
-        if (a[i] === b[i]) {
-          left.push(escHtml(a[i] ?? ''));
-          right.push(escHtml(b[i] ?? ''));
-        } else {
-          left.push(a[i] === undefined ? '' : `<span class="hl-del">${escHtml(a[i])}</span>`);
-          right.push(b[i] === undefined ? '' : `<span class="hl-add">${escHtml(b[i])}</span>`);
-        }
-      }
-      return (
-        '<div class="diff2"><div><h4>Approved file (belief)</h4><pre>' +
-        left.join('\n') +
-        '</pre></div><div><h4>Actual result (code)</h4><pre>' +
-        right.join('\n') +
-        '</pre></div></div>'
-      );
-    };
-    // Side-by-side panes (above) are the visual diff everywhere.
-
-    $('replay-run').onclick = () => {
-      const text = $('replay-file').value;
-      let scenario;
-      try {
-        scenario = parseScenario(text); // throws on hollow/malformed files
-      } catch (e) {
-        const msg = String(e.message ?? e).replace(/&/g, '&amp;').replace(/</g, '&lt;');
-        $('replay-out').innerHTML = `<span class="fail">FAIL (parse)</span>\n${msg}`;
-        return;
-      }
-      const actual = renderScenario(scenario, mergeSleep(scenario.sessions));
-      if (actual === normalizeText(text)) {
-        $('replay-out').innerHTML = `<span class="pass">PASS</span> — belief and code agree`;
-        focusLoop('pass');
-        return;
-      }
-      $('replay-out').innerHTML =
-        '<span class="fail">FAIL</span> — belief on the left, code on the right:' +
-        sideBySide(text, actual);
-      focusLoop('compare');
-    };
-
-    // Fixed-file view: left = corrected file, rows the human changed tagged
-    // "(corrected)" in dark green; right = actual code output (matches now).
-    const sideBySideFixed = (brokenText, fixedText, actualText) => {
-      const a = normalizeText(brokenText).split('\n');
-      const b = normalizeText(fixedText).split('\n');
-      const c = actualText.split('\n');
-      const left = [];
-      const right = [];
-      const n = Math.max(b.length, c.length);
-      for (let i = 0; i < n; i++) {
-        if (b[i] !== a[i]) {
-          left.push(`<span class="hl-fixed">${escHtml(b[i] ?? '')} (corrected)</span>`);
-        } else {
-          left.push(escHtml(b[i] ?? ''));
-        }
-        right.push(escHtml(c[i] ?? ''));
-      }
-      return (
-        '<div class="diff2"><div><h4>Corrected file (belief)</h4><pre>' +
-        left.join('\n') +
-        '</pre></div><div><h4>Actual result (code)</h4><pre>' +
-        right.join('\n') +
-        '</pre></div></div>'
-      );
-    };
-
-    // ---- full sweep: what tests/scenarios.test.ts does file by file ----
-    const sweepOverrides = {};
-    const sweepPick = $('sweep-pick');
-    Object.keys(REPLAY_BREAKS).forEach((f) => {
-      const o = document.createElement('option');
-      o.value = f;
-      o.textContent = f;
-      sweepPick.appendChild(o);
-    });
-    sweepPick.value = 'chain-of-three.approved.md';
-    const sweepFile = async (f, text, out, counts) => {
-      if (text === null) {
-        out.push(`✗ ${escHtml(f)} — could not load`);
-        counts.fail++;
-        return;
-      }
-      try {
-        const s = parseScenario(text);
-        const actual = renderScenario(s, mergeSleep(s.sessions));
-        if (actual === normalizeText(text)) {
-          out.push(`✓ ${escHtml(f)}`);
-          counts.pass++;
-        } else {
-          out.push(`✗ ${escHtml(f)} — belief on the left, code on the right:`);
-          out.push(sideBySide(text, actual));
-          counts.fail++;
-        }
-      } catch (e) {
-        out.push(`✗ ${escHtml(f)} — parse: ${escHtml(String(e.message ?? e))}`);
-        counts.fail++;
-      }
-    };
-    const sweepLoad = async (f) => {
-      if (sweepOverrides[f] !== undefined) return sweepOverrides[f];
-      const r = await fetch(`../scenarios/${f}`);
-      return r.ok ? await r.text() : null;
-    };
-    const runSweep = async () => {
-      const out = [];
-      const counts = { pass: 0, fail: 0 };
-      for (const f of scenarioFiles) {
-        await sweepFile(f, await sweepLoad(f), out, counts);
-      }
-      out.push(`— ${counts.pass} passed, ${counts.fail} failed —`);
-      $('sweep-out').innerHTML = out.join('\n');
-      focusLoop(counts.fail > 0 ? 'compare' : 'pass');
-    };
-    $('sweep-run').onclick = runSweep;
-    $('sweep-break').onclick = async () => {
-      const file = sweepPick.value;
-      const r = await fetch(`../scenarios/${file}`);
-      const text = r.ok ? await r.text() : '';
-      sweepOverrides[file] = breakIt(text, file);
-      runSweep();
-    };
-    $('sweep-fix').onclick = async () => {
-      // The human (or agent, with approval) corrects the belief: show the
-      // fixed file with corrected rows marked, then re-run the full sweep.
-      const out = [];
-      for (const k of Object.keys(sweepOverrides)) {
-        const broken = sweepOverrides[k];
-        const fixed = fixIt(broken, k);
-        const s = parseScenario(fixed);
-        const actual = renderScenario(s, mergeSleep(s.sessions));
-        out.push(`✓ ${escHtml(k)} — human fix applied, corrected rows marked:`);
-        out.push(sideBySideFixed(broken, fixed, actual));
-        delete sweepOverrides[k];
-      }
-      if (out.length === 0) out.push('Nothing to fix — run the full sweep:');
-      const counts = { pass: 0, fail: 0 };
-      for (const f of scenarioFiles) {
-        await sweepFile(f, await sweepLoad(f), out, counts);
-      }
-      out.push(`— ${counts.pass} passed, ${counts.fail} failed —`);
-      $('sweep-out').innerHTML = out.join('\n');
-      focusLoop('pass');
-    };
-
-    $('replay-fix').onclick = () => {
-      $('replay-file').value = fixIt($('replay-file').value, currentFile);
-      focusLoop('fixfile');
-    };
-
-    // ---- side by side: same case, approved file vs traditional assertions ----
-    load('../scenarios/chain-of-three.approved.md', 'side-md');
-    $('side-code').textContent = [
-      "it('chain of three overlapping sessions becomes one', () => {",
-      '  const result = mergeSleep([',
-      "    { source: 'fitbit', start: '2026-10-01T22:00:00Z', end: '2026-10-02T00:00:00Z' },",
-      "    { source: 'phone', start: '2026-10-01T23:30:00Z', end: '2026-10-02T02:00:00Z' },",
-      "    { source: 'watch', start: '2026-10-02T01:30:00Z', end: '2026-10-02T04:00:00Z' },",
-      '  ]);',
-      '  expect(result.sessions).toEqual([',
-      "    { start: '2026-10-01T22:00:00Z', end: '2026-10-02T04:00:00Z' },",
-      '  ]);',
-      '  expect(result.totalMinutes).toBe(360);',
-      '  expect(result.overlapsMerged).toBe(2);',
-      '});',
-    ].join('\n');
-  </script>
+  <footer>Sleep Merger <span>Approved examples · Pure functions · Human review</span></footer>
+  </main>
+  <script type="module" src="./demo.js"></script>
 </body>
 </html>
