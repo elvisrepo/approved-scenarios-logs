@@ -213,3 +213,8 @@ main { max-width: none; width: 100%; margin: 0; }
   #runner-graph { max-width: 300px; margin: auto; }
   .runner-overview p { margin-top: 6px; font-size: .75rem; }
 }
+
+#stage-compare > .traditional-test { border-left: 0; border-top: 1px solid var(--line); padding: 24px 0 0; margin-top: 24px; }
+#comparison-details { margin-top: 12px; }
+#comparison-full pre { min-height: 160px; }
+#stage-experiment .card-heading { margin-bottom: 12px; }

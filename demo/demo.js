@@ -86,11 +86,11 @@ const runnerContexts = {
   'demo-file': 'stage-file',
   'parsed-input': 'parsed-details',
   'result-summary': 'stage-run',
-  'rendered-actual': 'rendered-details',
-  'comparison-full': 'comparison-details',
+  'rendered-actual': 'stage-compare',
+  'comparison-full': 'stage-compare',
   'comparison-status': 'stage-compare',
   'review-message': 'review-decision',
-  'restore-expectation': 'expectation-actions',
+  'restore-expectation': 'stage-experiment',
   'demo-implementation': 'implementation-details',
 };
 function revealTarget(id, step, node) {
@@ -111,10 +111,10 @@ function revealTarget(id, step, node) {
 function visitStep(step) {
   clearTargetHighlight();
   setStep(step);
-  const target = step === 'input' ? $('preset-pick') : step === 'run' ? $('merge') : $('compare-title');
+  const target = step === 'input' ? $('preset-pick') : step === 'run' ? $('merge') : step === 'review' ? $('experiment-title') : $('compare-title');
   target.tabIndex = target.tagName === 'H2' ? -1 : target.tabIndex;
   target.focus({ preventScroll: true });
-  (step === 'input' ? $('stage-file') : step === 'run' ? $('stage-run') : $('stage-compare')).scrollIntoView({ block: 'start' });
+  (step === 'input' ? $('stage-file') : step === 'run' ? $('stage-run') : step === 'review' ? $('stage-experiment') : $('stage-compare')).scrollIntoView({ block: 'start' });
 }
 document.querySelectorAll('[data-step]').forEach((button) => button.addEventListener('click', () => visitStep(button.dataset.step)));
 
@@ -207,10 +207,42 @@ function validateExample() {
     return false;
   }
 }
+function displayMarkdown(actual, compared = false) {
+  const expected = selectedExpectation();
+  const expectedPane = $('expected-markdown');
+  const actualPane = $('rendered-actual');
+  expectedPane.previousElementSibling.textContent = expectationBroken ? 'Expected · modified browser copy' : 'Expected · approved file';
+  if (!compared) {
+    expectedPane.textContent = normalizeText(expected);
+    actualPane.textContent = actual;
+    return;
+  }
+  const left = normalizeText(expected).split('\n');
+  const right = normalizeText(actual).split('\n');
+  const count = Math.max(left.length, right.length);
+  const pane = (lines, className) => Array.from({ length: count }, (_, i) => left[i] === right[i] ? esc(lines[i] ?? '') : `<span class="${className}">${esc(lines[i] ?? '')}</span>`).join('\n');
+  expectedPane.innerHTML = pane(left, 'hl-del');
+  actualPane.innerHTML = pane(right, 'hl-add');
+}
+function resetComparison(message, actualPlaceholder) {
+  displayMarkdown(actualPlaceholder);
+  $('comparison').hidden = true;
+  $('comparison').innerHTML = '';
+  $('comparison-empty').hidden = false;
+  $('comparison-empty').textContent = 'Diff file vs actual checks every line and highlights differences.';
+  $('comparison-status').textContent = 'Not compared yet';
+  $('comparison-status').className = 'badge subtle';
+  $('comparison-message').textContent = message;
+  $('try-mistake').disabled = true;
+  $('restore-expectation').hidden = !expectationBroken;
+  $('review-expectation').disabled = true;
+  $('lesson-message').textContent = 'Compare the example first, then try an incorrect expectation to see the test fail.';
+  $('review-message').textContent = 'Compare the output before deciding whether anything needs changing.';
+}
 function renderActual() {
   if (!currentResult && !executeExample()) return undefined;
   const actual = renderScenario(currentScenario, currentResult);
-  $('rendered-actual').textContent = actual;
+  resetComparison('Actual output rendered. Read it beside the expectation, then choose Diff file vs actual to compare every line.', actual);
   return actual;
 }
 function showComparison(restored = false) {
@@ -225,7 +257,8 @@ function showComparison(restored = false) {
   $('comparison-empty').hidden = true;
   $('comparison').innerHTML = comparisonTable(expected, actual);
   showTraditionalTest(expected);
-  $('comparison-full').innerHTML = fullDiff(expected, actual);
+  displayMarkdown(actual, true);
+  $('comparison-message').textContent = matches ? 'Every line of the expected and actual files matches.' : 'The files differ. Highlighted lines show the mismatches.';
   $('try-mistake').disabled = !matches;
   $('restore-expectation').hidden = !expectationBroken;
   $('review-expectation').disabled = matches;
@@ -248,21 +281,11 @@ function selectExample() {
   $('result-summary').hidden = true;
   $('result').textContent = 'Run the example to see the result.';
   $('logs').textContent = 'Run the example to capture the log events.';
-  $('rendered-actual').textContent = 'Run or render the example to rebuild its actual output as Markdown.';
   $('parsed-input').textContent = 'Choose Parse and validate to inspect the input.';
   $('parse-status').textContent = 'Not validated yet';
   $('parse-status').className = 'badge subtle';
-  $('comparison').hidden = true;
-  $('comparison-empty').hidden = false;
-  $('comparison-empty').textContent = 'Run the example to check these expectations.';
-  $('comparison-status').textContent = 'Not run yet';
-  $('comparison-status').className = 'badge';
-  $('lesson-message').textContent = 'Run the example to compare every result with the approved file.';
-  $('try-mistake').disabled = true;
-  $('restore-expectation').hidden = true;
-  $('comparison-full').innerHTML = '<p class="muted">Run the example to compare the complete files.</p>';
-  $('review-expectation').disabled = true;
-  $('review-message').textContent = 'Compare the example first. A mismatch calls for a human decision about which side needs changing.';
+  resetComparison('The approved expectation is ready. Render the actual output to view both files side by side.', 'Choose Render actual to rebuild the function output as Markdown.');
+  $('comparison-status').textContent = 'Not rendered yet';
   clearTargetHighlight();
   $('runner-message').textContent = 'Click a step to explore its content. All paths remain visible.';
   $('sweep-pick').value = currentExample.file;
@@ -283,17 +306,7 @@ function executeExample() {
   $('result-empty').hidden = true;
   $('result-summary').hidden = false;
   renderTimeline();
-  $('rendered-actual').textContent = 'Choose Render actual to rebuild this result as Markdown.';
-  $('comparison').hidden = true;
-  $('comparison-empty').hidden = false;
-  $('comparison-empty').textContent = 'Choose Diff file vs actual to compare this result with the expectation.';
-  $('comparison-status').textContent = 'Not compared yet';
-  $('comparison-status').className = 'badge subtle';
-  $('comparison-full').innerHTML = '<p class="muted">Choose Diff file vs actual to compare the complete files.</p>';
-  $('try-mistake').disabled = true;
-  $('review-expectation').disabled = true;
-  $('review-message').textContent = 'The merge has run. Compare its output before deciding whether anything needs changing.';
-  $('lesson-message').textContent = 'The merge has run. Render and compare its output with the selected expectation.';
+  resetComparison('The merge has run. Render its output to view it beside the selected expectation.', 'Choose Render actual to rebuild this result as Markdown.');
   setStep('run');
   return true;
 }

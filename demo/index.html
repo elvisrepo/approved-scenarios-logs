@@ -6,7 +6,7 @@
   <title>Sleep Merger — see the overlap</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23172638'/%3E%3Cpath d='M22 6a11 11 0 1 0 4 18A10 10 0 0 1 22 6' fill='%23a9e6d8'/%3E%3C/svg%3E" />
   <meta name="theme-color" content="#172638" />
-  <link rel="stylesheet" href="./styles.css?v=vertical-runner-1" />
+  <link rel="stylesheet" href="./styles.css?v=comparison-flow-2" />
 </head>
 <body>
   <header class="site-header">
@@ -129,25 +129,29 @@
         <details open><summary>Inspect result and logs</summary><h3>Result JSON</h3><pre id="result">Run the example to see the result.</pre><h3>Captured JSON events</h3><pre id="logs">Run the example to capture the log events.</pre></details>
       </section>
     </div>
-    <section class="card lesson-card" id="stage-compare" aria-labelledby="compare-title">
-      <div class="card-heading"><div><p class="eyebrow">03 / Compare → 04 / Review</p><h2 id="compare-title">Can the test catch a mistake?</h2></div><span id="comparison-status" class="badge" role="status">Not run yet</span></div>
-      <p id="lesson-message" class="muted" aria-live="polite">Run the example to compare every result with the approved file.</p>
-      <div class="comparison-layout">
-        <div>
-          <h3>Expected &amp; actual</h3>
-          <p id="comparison-empty" class="muted">Run the example to check these expectations.</p>
-          <div id="comparison" hidden></div>
-          <div id="expectation-actions" class="actions"><button id="try-mistake" disabled>Try an incorrect expectation</button><button id="restore-expectation" class="primary" hidden>Restore correct expectation</button></div>
-          <p class="micro">This experiment changes a copy in your browser. Approved files on disk stay untouched.</p>
+    <section class="card" id="stage-compare" aria-labelledby="compare-title">
+      <div class="card-heading"><div><p class="eyebrow">03 / Compare</p><h2 id="compare-title">Expected vs actual</h2></div><span id="comparison-status" class="badge" role="status">Not rendered yet</span></div>
+      <p id="comparison-message" class="muted" aria-live="polite">The approved expectation is ready. Render the actual output to view both files side by side.</p>
+      <details id="comparison-details" open>
+        <summary>Expected and actual Markdown</summary>
+        <div id="comparison-full" class="diff2">
+          <div><h3>Expected · approved file</h3><pre id="expected-markdown">Loading the example…</pre></div>
+          <div><h3>Actual · function output</h3><pre id="rendered-actual">Choose Render actual to rebuild the function output as Markdown.</pre></div>
         </div>
-        <section class="traditional-test" aria-labelledby="traditional-test-title">
-          <div class="card-heading"><h3 id="traditional-test-title">Equivalent traditional test</h3><span class="badge subtle">Vitest</span></div>
-          <p id="traditional-test-note" class="micro">The same input and expectations, expressed as assertions.</p>
-          <pre class="code" id="traditional-test-code" tabindex="0" aria-label="Traditional test code for the selected example">Loading the example…</pre>
-        </section>
-      </div>
-      <details id="rendered-details" open><summary>Inspect rendered actual Markdown</summary><pre id="rendered-actual">Run or render the example to rebuild its actual output as Markdown.</pre></details>
-      <details id="comparison-details" open><summary>Inspect the complete file comparison</summary><div id="comparison-full"><p class="muted">Run the example to compare the complete files.</p></div></details>
+      </details>
+      <p id="comparison-empty" class="micro">Diff file vs actual checks every line and highlights differences.</p>
+      <div id="comparison" hidden></div>
+      <section class="traditional-test" aria-labelledby="traditional-test-title">
+        <div class="card-heading"><h3 id="traditional-test-title">Equivalent traditional test</h3><span class="badge subtle">Vitest</span></div>
+        <p id="traditional-test-note" class="micro">The same input and expectations, expressed as assertions.</p>
+        <pre class="code" id="traditional-test-code" tabindex="0" aria-label="Traditional test code for the selected example">Loading the example…</pre>
+      </section>
+    </section>
+    <section class="card lesson-card" id="stage-experiment" aria-labelledby="experiment-title">
+      <div class="card-heading"><div><p class="eyebrow">04 / Experiment &amp; review</p><h2 id="experiment-title">Can the test catch a mistake?</h2></div></div>
+      <p id="lesson-message" class="muted" aria-live="polite">Compare the example first, then try an incorrect expectation to see the test fail.</p>
+      <div id="expectation-actions" class="actions"><button id="try-mistake" disabled>Try an incorrect expectation</button><button id="restore-expectation" class="primary" hidden>Restore correct expectation</button></div>
+      <p class="micro">This experiment changes a copy in your browser. Approved files on disk stay untouched.</p>
       <section id="review-decision" class="review-decision" aria-labelledby="review-title">
         <h3 id="review-title">Review the expectation or the implementation</h3>
         <p id="review-message" class="muted" role="status">Compare the example first. A mismatch calls for a human decision about which side needs changing.</p>
@@ -255,6 +259,6 @@
 
   <footer>Sleep Merger <span>Approved examples · Pure functions · Human review</span></footer>
   </main>
-  <script type="module" src="./demo.js?v=vertical-runner-1"></script>
+  <script type="module" src="./demo.js?v=comparison-flow-2"></script>
 </body>
 </html>
