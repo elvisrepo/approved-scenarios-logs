@@ -90,7 +90,8 @@ const runnerContexts = {
   'comparison-full': 'stage-compare',
   'comparison-status': 'stage-compare',
   'review-message': 'review-decision',
-  'restore-expectation': 'stage-experiment',
+  'stage-experiment': 'stage-compare',
+  'restore-expectation': 'stage-compare',
   'demo-implementation': 'implementation-details',
 };
 function revealTarget(id, step, node) {
@@ -106,7 +107,14 @@ function revealTarget(id, step, node) {
   updateRunnerOffset();
   const context = $(runnerContexts[id]) || target.closest('details, section') || target;
   context.classList.add('runner-context');
-  context.scrollIntoView({ block: 'start' });
+  if (id === 'stage-experiment' || id === 'restore-expectation') {
+    // Keep the evidence above the decision controls, and bring the whole
+    // experiment into view when it would extend past the viewport.
+    const panel = $('stage-experiment');
+    const padding = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 88;
+    const top = Math.max(0, context.getBoundingClientRect().top + scrollY - padding, panel.getBoundingClientRect().bottom + scrollY - innerHeight + 24);
+    window.scrollTo({ top });
+  } else context.scrollIntoView({ block: 'start' });
 }
 function visitStep(step) {
   clearTargetHighlight();
@@ -382,13 +390,13 @@ function runNode(id) {
       $('runner-message').textContent = matches
         ? 'PASS verified: every line of the expected and actual files matches.'
         : 'This example fails. Review the mismatch before following the PASS branch.';
-      revealTarget(matches ? 'comparison-status' : 'review-message', matches ? 'compare' : 'review', matches ? id : 'decide');
+      revealTarget(matches ? 'comparison-status' : 'stage-experiment', matches ? 'compare' : 'review', matches ? id : 'decide');
       break;
     }
     case 'decide':
       if (showComparison() === undefined) break;
       $('runner-message').textContent = 'Review the evidence and decide which side, if any, needs changing.';
-      revealTarget('review-message', 'review', id);
+      revealTarget('stage-experiment', 'review', id);
       break;
     case 'fixfile': reviewExpectation(); break;
     case 'fixcode': inspectImplementation(); break;

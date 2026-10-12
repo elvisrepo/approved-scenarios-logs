@@ -218,3 +218,7 @@ main { max-width: none; width: 100%; margin: 0; }
 #comparison-details { margin-top: 12px; }
 #comparison-full pre { min-height: 160px; }
 #stage-experiment .card-heading { margin-bottom: 12px; }
+
+.experiment-panel { margin-top: 24px; padding: 20px; background: #f0f7f5; border: 1px solid #cbded7; border-radius: 12px; }
+.experiment-panel h2 { font-size: 1.1rem; }
+.experiment-panel .micro { margin-bottom: 0; }
