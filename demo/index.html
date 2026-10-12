@@ -6,7 +6,7 @@
   <title>Sleep Merger — see the overlap</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23172638'/%3E%3Cpath d='M22 6a11 11 0 1 0 4 18A10 10 0 0 1 22 6' fill='%23a9e6d8'/%3E%3C/svg%3E" />
   <meta name="theme-color" content="#172638" />
-  <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./styles.css?v=vertical-runner-1" />
 </head>
 <body>
   <header class="site-header">
@@ -24,10 +24,74 @@
   <noscript><p class="notice">Enable JavaScript to run the examples and explore the timeline.</p></noscript>
   <section id="tab-demo" role="tabpanel" aria-labelledby="nav-demo">
     <section class="card runner-overview" id="loop-wrap" aria-labelledby="runner-title">
-      <div class="card-heading"><h2 id="runner-title">Runner loop <span class="badge subtle">Selected example</span></h2><button id="loop-reset">Show full loop</button></div>
+      <div class="card-heading"><h2 id="runner-title">Runner loop <span class="badge subtle">Selected example</span></h2><div class="runner-tools"><button id="loop-reset">Clear highlight</button><a href="../docs/approved-scenarios-runner.workflow.html" target="_blank" rel="noopener">Full diagram ↗</a></div></div>
       <p id="runner-message" class="muted" role="status">Click a node to explore its step. The loop follows your progress.</p>
-      <iframe id="loop-diagram" class="loop" src="../docs/approved-scenarios-runner.workflow.html?embed=1" title="Interactive approved scenarios runner loop"></iframe>
+      <div id="loop-diagram" class="loop">
+        <svg id="runner-graph" viewBox="0 0 360 704" role="group" aria-labelledby="runner-graph-title">
+          <title id="runner-graph-title">Approved scenarios runner loop</title>
+          <defs><marker id="runner-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/></marker></defs>
+          <g class="runner-edges" fill="none" marker-end="url(#runner-arrow)">
+            <path data-edge-from="fixture" data-edge-to="parse" d="M180 70 V96"/>
+            <path data-edge-from="parse" data-edge-to="execute" d="M180 150 V176"/>
+            <path data-edge-from="execute" data-edge-to="render" d="M180 230 V256"/>
+            <path data-edge-from="render" data-edge-to="compare" d="M180 310 V336"/>
+            <path data-edge-from="compare" data-edge-to="pass" d="M180 390 V416"/>
+            <path class="mismatch-edge" data-edge-from="compare" data-edge-to="decide" d="M295 363 H326 V523 H295"/>
+            <path data-edge-from="decide" data-edge-to="fixfile" d="M140 550 V572 H94 V594"/>
+            <path data-edge-from="decide" data-edge-to="fixcode" d="M220 550 V572 H266 V594"/>
+            <path class="return-edge" data-edge-from="fixfile" data-edge-to="parse" d="M94 648 V676 H8 V123 H65"/>
+            <path class="return-edge" data-edge-from="fixcode" data-edge-to="parse" d="M266 648 V676 H8 V123 H65"/>
+          </g>
+          <g class="runner-edge-labels"><text x="198" y="407">match</text><text x="338" y="443" transform="rotate(90 338 443)" text-anchor="middle">mismatch</text><text x="94" y="568" text-anchor="middle">file wrong</text><text x="266" y="568" text-anchor="middle">code wrong</text><text x="180" y="696" text-anchor="middle">Review changes, then rerun</text></g>
+          <g data-node-id="fixture" data-node-label="Approved .md file" class="runner-node external" role="button" tabindex="0" aria-label="Explore Approved .md file" aria-pressed="false">
+            <rect x="65" y="16" width="230" height="54" rx="9"/>
+            <text class="node-label" x="180.0" y="38" text-anchor="middle">Approved .md file</text>
+            <text class="node-description" x="180.0" y="56" text-anchor="middle">input + expected</text>
+          </g>
+          <g data-node-id="parse" data-node-label="Parse and validate" class="runner-node backend" role="button" tabindex="0" aria-label="Explore Parse and validate" aria-pressed="false">
+            <rect x="65" y="96" width="230" height="54" rx="9"/>
+            <text class="node-label" x="180.0" y="118" text-anchor="middle">Parse and validate</text>
+            <text class="node-description" x="180.0" y="136" text-anchor="middle">rejects hollow tests</text>
+          </g>
+          <g data-node-id="execute" data-node-label="Execute mergeSleep" class="runner-node backend" role="button" tabindex="0" aria-label="Explore Execute mergeSleep" aria-pressed="false">
+            <rect x="65" y="176" width="230" height="54" rx="9"/>
+            <text class="node-label" x="180.0" y="198" text-anchor="middle">Execute mergeSleep</text>
+            <text class="node-description" x="180.0" y="216" text-anchor="middle">pure function, no I/O</text>
+          </g>
+          <g data-node-id="render" data-node-label="Render actual" class="runner-node backend" role="button" tabindex="0" aria-label="Explore Render actual" aria-pressed="false">
+            <rect x="65" y="256" width="230" height="54" rx="9"/>
+            <text class="node-label" x="180.0" y="278" text-anchor="middle">Render actual</text>
+            <text class="node-description" x="180.0" y="296" text-anchor="middle">rebuilds file text</text>
+          </g>
+          <g data-node-id="compare" data-node-label="Diff file vs actual" class="runner-node backend" role="button" tabindex="0" aria-label="Explore Diff file vs actual" aria-pressed="false">
+            <rect x="65" y="336" width="230" height="54" rx="9"/>
+            <text class="node-label" x="180.0" y="358" text-anchor="middle">Diff file vs actual</text>
+            <text class="node-description" x="180.0" y="376" text-anchor="middle">all lines · never auto-fixes</text>
+          </g>
+          <g data-node-id="pass" data-node-label="PASS" class="runner-node backend" role="button" tabindex="0" aria-label="Explore PASS" aria-pressed="false">
+            <rect x="65" y="416" width="230" height="54" rx="9"/>
+            <text class="node-label" x="180.0" y="438" text-anchor="middle">PASS</text>
+            <text class="node-description" x="180.0" y="456" text-anchor="middle">belief matches code</text>
+          </g>
+          <g data-node-id="decide" data-node-label="Human decides" class="runner-node security" role="button" tabindex="0" aria-label="Explore Human decides" aria-pressed="false">
+            <rect x="65" y="496" width="230" height="54" rx="9"/>
+            <text class="node-label" x="180.0" y="518" text-anchor="middle">Human decides</text>
+            <text class="node-description" x="180.0" y="536" text-anchor="middle">file wrong or code wrong?</text>
+          </g>
+          <g data-node-id="fixfile" data-node-label="Fix .approved.md" class="runner-node external" role="button" tabindex="0" aria-label="Explore Fix .approved.md" aria-pressed="false">
+            <rect x="18" y="594" width="152" height="54" rx="9"/>
+            <text class="node-label" x="94.0" y="616" text-anchor="middle">Fix .approved.md</text>
+            <text class="node-description" x="94.0" y="634" text-anchor="middle">review the expectation</text>
+          </g>
+          <g data-node-id="fixcode" data-node-label="Fix src/" class="runner-node backend" role="button" tabindex="0" aria-label="Explore Fix src/" aria-pressed="false">
+            <rect x="190" y="594" width="152" height="54" rx="9"/>
+            <text class="node-label" x="266.0" y="616" text-anchor="middle">Fix src/</text>
+            <text class="node-description" x="266.0" y="634" text-anchor="middle">inspect implementation</text>
+          </g>
+        </svg>
+      </div>
     </section>
+    <div class="demo-content">
     <div class="intro"><p class="eyebrow">One night. Several sources. One clear result.</p><h1>See the overlap.<br>Trust the result.</h1><p>Combine sleep records, compare the result with an approved example, and discover how a readable test catches a mistake.</p></div>
     <nav class="steps" aria-label="Example steps">
       <button data-step="input" aria-current="step"><span>1</span> Input</button>
@@ -73,7 +137,7 @@
           <h3>Expected &amp; actual</h3>
           <p id="comparison-empty" class="muted">Run the example to check these expectations.</p>
           <div id="comparison" hidden></div>
-          <div class="actions"><button id="try-mistake" disabled>Try an incorrect expectation</button><button id="restore-expectation" class="primary" hidden>Restore correct expectation</button></div>
+          <div id="expectation-actions" class="actions"><button id="try-mistake" disabled>Try an incorrect expectation</button><button id="restore-expectation" class="primary" hidden>Restore correct expectation</button></div>
           <p class="micro">This experiment changes a copy in your browser. Approved files on disk stay untouched.</p>
         </div>
         <section class="traditional-test" aria-labelledby="traditional-test-title">
@@ -84,7 +148,7 @@
       </div>
       <details id="rendered-details" open><summary>Inspect rendered actual Markdown</summary><pre id="rendered-actual">Run or render the example to rebuild its actual output as Markdown.</pre></details>
       <details id="comparison-details" open><summary>Inspect the complete file comparison</summary><div id="comparison-full"><p class="muted">Run the example to compare the complete files.</p></div></details>
-      <section class="review-decision" aria-labelledby="review-title">
+      <section id="review-decision" class="review-decision" aria-labelledby="review-title">
         <h3 id="review-title">Review the expectation or the implementation</h3>
         <p id="review-message" class="muted" role="status">Compare the example first. A mismatch calls for a human decision about which side needs changing.</p>
         <div class="actions"><button id="review-expectation" disabled>Review expectation</button><button id="review-code">Inspect implementation</button></div>
@@ -99,6 +163,7 @@
       <p class="micro">Mistakes and corrections are browser-only copies.</p>
       <p id="sweep-status" role="status">No suite run yet.</p><div id="sweep-out"></div>
     </section>
+    </div>
   </section>
 
   <section id="tab-source" role="tabpanel" aria-labelledby="nav-source" hidden>
@@ -190,6 +255,6 @@
 
   <footer>Sleep Merger <span>Approved examples · Pure functions · Human review</span></footer>
   </main>
-  <script type="module" src="./demo.js"></script>
+  <script type="module" src="./demo.js?v=vertical-runner-1"></script>
 </body>
 </html>

@@ -47,16 +47,31 @@ tabs.forEach((tab, index) => {
   });
 });
 
-const loopBase = '../docs/approved-scenarios-runner.workflow.html?embed=1';
+let selectedRunnerNode = null;
 function focusLoop(node) {
-  $('loop-diagram').src = `${loopBase}#focus=${node}`;
+  selectedRunnerNode = node;
+  const svg = $('runner-graph');
+  if (!svg) return;
+  svg.querySelectorAll('[data-node-id]').forEach((element) => {
+    const selected = element.dataset.nodeId === node;
+    element.toggleAttribute('data-demo-selected', selected);
+    element.setAttribute('aria-pressed', String(selected));
+  });
 }
-$('loop-reset').addEventListener('click', () => { $('loop-diagram').src = loopBase; });
+function clearTargetHighlight() {
+  document.querySelectorAll('.runner-target, .runner-context').forEach((target) => target.classList.remove('runner-target', 'runner-context'));
+}
+$('loop-reset').addEventListener('click', () => {
+  focusLoop(null);
+  clearTargetHighlight();
+  $('runner-message').textContent = 'Click a step to explore its content. All paths remain visible.';
+});
 // Keep the step bar and scroll targets below the pinned, responsive diagram.
 function updateRunnerOffset() {
-  document.documentElement.style.setProperty('--runner-offset', `${Math.ceil($('loop-wrap').getBoundingClientRect().height) + 24}px`);
+  document.documentElement.style.setProperty('--runner-offset', `${window.matchMedia('(max-width: 700px)').matches ? Math.ceil($('loop-wrap').getBoundingClientRect().height) + 16 : 12}px`);
 }
 new ResizeObserver(updateRunnerOffset).observe($('loop-wrap'));
+window.addEventListener('resize', updateRunnerOffset);
 const stepDescriptions = { input: 'Start with an approved example.', run: 'Run the pure merging function.', compare: 'Compare the whole result with the expectation.', review: 'Read the mismatch and review the expectation.' };
 function setStep(step, node = { input: 'fixture', run: 'execute', compare: 'compare', review: 'decide' }[step]) {
   document.querySelectorAll('[data-step]').forEach((button) => {
@@ -66,17 +81,35 @@ function setStep(step, node = { input: 'fixture', run: 'execute', compare: 'comp
   $('step-help').textContent = stepDescriptions[step];
   focusLoop(node);
 }
+// Scroll the content's context into view while retaining focus on its exact target.
+const runnerContexts = {
+  'demo-file': 'stage-file',
+  'parsed-input': 'parsed-details',
+  'result-summary': 'stage-run',
+  'rendered-actual': 'rendered-details',
+  'comparison-full': 'comparison-details',
+  'comparison-status': 'stage-compare',
+  'review-message': 'review-decision',
+  'restore-expectation': 'expectation-actions',
+  'demo-implementation': 'implementation-details',
+};
 function revealTarget(id, step, node) {
   const target = $(id);
-  const disclosure = target.closest('details');
-  if (disclosure) disclosure.open = true;
+  for (let parent = target.parentElement; parent; parent = parent.parentElement) {
+    if (parent.tagName === 'DETAILS') parent.open = true;
+  }
   setStep(step, node);
+  clearTargetHighlight();
+  target.classList.add('runner-target');
   if (!target.matches('button, select, input, textarea, a[href], [tabindex]')) target.tabIndex = -1;
   target.focus({ preventScroll: true });
   updateRunnerOffset();
-  target.scrollIntoView({ block: 'start' });
+  const context = $(runnerContexts[id]) || target.closest('details, section') || target;
+  context.classList.add('runner-context');
+  context.scrollIntoView({ block: 'start' });
 }
 function visitStep(step) {
+  clearTargetHighlight();
   setStep(step);
   const target = step === 'input' ? $('preset-pick') : step === 'run' ? $('merge') : $('compare-title');
   target.tabIndex = target.tagName === 'H2' ? -1 : target.tabIndex;
@@ -230,7 +263,8 @@ function selectExample() {
   $('comparison-full').innerHTML = '<p class="muted">Run the example to compare the complete files.</p>';
   $('review-expectation').disabled = true;
   $('review-message').textContent = 'Compare the example first. A mismatch calls for a human decision about which side needs changing.';
-  $('runner-message').textContent = 'Click a node to explore its step. The loop follows your progress.';
+  clearTargetHighlight();
+  $('runner-message').textContent = 'Click a step to explore its content. All paths remain visible.';
   $('sweep-pick').value = currentExample.file;
   showTraditionalTest(approved.get(currentExample.file));
   setStep('input');
@@ -316,8 +350,8 @@ function runNode(id) {
       break;
     case 'execute':
       if (!executeExample()) { revealTarget('parsed-input', 'input', 'parse'); break; }
-      $('runner-message').textContent = 'Merge complete. Inspect the result before rendering and comparing it.';
-      revealTarget('result', 'run', id);
+      $('runner-message').textContent = 'Merge complete. Inspect the merged timeline and totals, with JSON and logs below.';
+      revealTarget('result-summary', 'run', id);
       break;
     case 'render':
       if (renderActual() === undefined) break;
@@ -348,43 +382,17 @@ function runNode(id) {
   }
 }
 
-// The embedded nodes use one action handler. Stop SVG delegation from changing
-// the selected node again after the demo has chosen the appropriate outcome.
-function bindLoopNodes() {
-  const doc = $('loop-diagram').contentDocument;
-  if (!doc) return;
-  // Fit the existing SVG to this compact viewport rather than clipping its
-  // natural page height. The standalone diagram keeps its original layout.
-  if (!doc.getElementById('demo-runner-fit')) {
-    const style = doc.createElement('style');
-    style.id = 'demo-runner-fit';
-    style.textContent = `
-      html[data-embed="true"], html[data-embed="true"] body,
-      html[data-embed="true"] .container { height: 100%; min-height: 0; }
-      html[data-embed="true"] .diagram-container { height: 100%; min-height: 0; padding: 0; }
-      html[data-embed="true"] .diagram-container > svg { width: 100% !important; height: 100% !important; min-width: 0 !important; }
-    `;
-    doc.head.appendChild(style);
-  }
-  doc.querySelectorAll('.diagram-container > svg [data-node-id]').forEach((node) => {
-    if (node.dataset.demoBound) return;
-    node.dataset.demoBound = 'true';
-    node.style.cursor = 'pointer';
-    node.setAttribute('role', 'button');
-    node.setAttribute('tabindex', '0');
-    node.setAttribute('aria-label', `Explore ${node.dataset.nodeLabel}`);
-    const activate = (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      if (event.type === 'click' && doc.querySelector('.diagram-container').getAttribute('data-just-panned') === 'true') return;
-      runNode(node.dataset.nodeId);
-    };
-    node.addEventListener('click', activate);
-    node.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') activate(event); });
-  });
+// The sidebar graph shares the same actions as the demo's controls.
+const runnerGraph = $('runner-graph');
+function activateRunnerNode(event) {
+  const node = event.target.closest('[data-node-id]');
+  if (!node || !runnerGraph.contains(node)) return;
+  if (event.type === 'keydown' && event.key !== 'Enter' && event.key !== ' ') return;
+  event.preventDefault();
+  runNode(node.dataset.nodeId);
 }
-$('loop-diagram').addEventListener('load', bindLoopNodes);
-bindLoopNodes();
+runnerGraph.addEventListener('click', activateRunnerNode);
+runnerGraph.addEventListener('keydown', activateRunnerNode);
 
 // The sweep uses browser copies and the real parser/render/compare loop.
 const suiteOverrides = new Map();
@@ -488,7 +496,7 @@ if (failure) {
   });
   ['replay-run', 'replay-break', 'replay-fix', 'sweep-run', 'sweep-break'].forEach((id) => { $(id).disabled = false; });
   selectExample();
-  $('loop-diagram').src = loopBase;
+  focusLoop(null);
   showApproved();
   selectReplay();
 }
