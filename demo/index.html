@@ -6,14 +6,13 @@
   <title>Sleep Merger — see the overlap</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23172638'/%3E%3Cpath d='M22 6a11 11 0 1 0 4 18A10 10 0 0 1 22 6' fill='%23a9e6d8'/%3E%3C/svg%3E" />
   <meta name="theme-color" content="#172638" />
-  <link rel="stylesheet" href="./styles.css?v=centered-content-1" />
+  <link rel="stylesheet" href="./styles.css?v=playground-reset-2" />
 </head>
 <body>
   <header class="site-header">
     <div class="brand"><span class="brand-mark" aria-hidden="true">☾</span> Sleep Merger <span class="eyebrow">A testing playground</span></div>
     <nav class="tabs" role="tablist" aria-label="Explore the project">
       <button id="nav-demo" role="tab" aria-controls="tab-demo" aria-selected="true" data-tab="demo">Playground</button>
-      <button id="nav-scenarios" role="tab" aria-controls="tab-scenarios" aria-selected="false" tabindex="-1" data-tab="scenarios">Scenarios</button>
       <button id="nav-logs" role="tab" aria-controls="tab-logs" aria-selected="false" tabindex="-1" data-tab="logs">Logs</button>
       <button id="nav-source" role="tab" aria-controls="tab-source" aria-selected="false" tabindex="-1" data-tab="source">Source code</button>
       <button id="nav-diagram" role="tab" aria-controls="tab-diagram" aria-selected="false" tabindex="-1" data-tab="diagram">Runner diagram</button>
@@ -89,6 +88,7 @@
       <button data-step="compare"><span>3</span> Compare</button>
       <button data-step="review"><span>4</span> Review</button>
       <p id="step-help">Start with an approved example.</p>
+      <button id="playground-reset" aria-label="Reset playground" title="Reset playground" disabled><span aria-hidden="true">↺</span><span class="reset-label">Reset playground</span></button>
     </nav>
     <div id="load-error" class="notice error" role="alert" hidden></div>
     <div class="workspace">
@@ -173,50 +173,6 @@
     </details>
   </section>
 
-  <section id="tab-scenarios" role="tabpanel" aria-labelledby="nav-scenarios" hidden>
-    <div class="intro"><p class="eyebrow">Approved Scenarios</p><h1>Readable examples.<br>Executable expectations.</h1></div>
-    <p>Each file is input + expected output in domain language. Pick a file to view it exactly as the runner sees it.</p>
-    <h3>How these files get tested</h3>
-    <p>The runner (<code>tests/scenarios.test.ts</code>, full source in the Source code tab) discovers every <code>scenarios/*.approved.md</code> at collection time — a new test case is a new file, this code never changes. Per file, three steps:</p>
-    <ol>
-      <li><strong>Parse</strong> (<code>scenarios.test.ts:23</code>) — <code>parseScenario</code> reads the input and demands a <code>## Result</code>; hollow files throw here, before the code runs.</li>
-      <li><strong>Execute</strong> (<code>scenarios.test.ts:26</code>) — <code>mergeSleep</code> runs on the file's input.</li>
-      <li><strong>Render + diff</strong> (<code>scenarios.test.ts:30</code>) — the actual result is rebuilt into the same markdown and compared to the file in the suite's only assertion.</li>
-    </ol>
-    <div class="row">
-      <label>View approved file
-        <select id="scenario-view-pick"></select>
-      </label>
-    </div>
-    <pre id="scenarioview">pick a scenario above</pre>
-
-    <h2>Experiment with the expectation</h2>
-    <p>Start with a passing example. Introduce a mistake or edit the browser copy, then run the comparison. Approved files on disk stay untouched.</p>
-    <div class="row">
-      <label>Load into runner
-        <select id="replay-pick"></select>
-      </label>
-    </div>
-    <label for="replay-file">Editable browser copy</label><textarea id="replay-file" rows="13" spellcheck="false"></textarea>
-    <div class="row">
-      <button id="replay-run" class="primary" disabled>Run test</button><button id="replay-break" disabled>Try a mistake</button>
-      <button id="replay-fix" disabled>Restore original example</button>
-    </div>
-    <div id="replay-out" role="status"></div>
-
-    <h2>Same case, two representations</h2>
-    <div class="sidebyside">
-      <div>
-        <h3>Approved file</h3>
-        <pre id="side-md">loading…</pre>
-      </div>
-      <div>
-        <h3>Traditional test code</h3>
-        <pre id="side-code"></pre>
-      </div>
-    </div>
-  </section>
-
   <section id="tab-logs" role="tabpanel" aria-labelledby="nav-logs" hidden>
     <div class="intro"><p class="eyebrow">Approved Logs</p><h1>A captured run.<br>A replayable test.</h1></div>
     <p>Line 1 is the invocation (<code>merge_requested</code> carrying the input sessions); the rest is the expected emitted output. The runner (<code>tests/logs.test.ts</code>) replays line 1 through <code>logMerge</code> and compares every captured line.</p>
@@ -225,7 +181,6 @@
   </section>
 
   <section id="tab-diagram" role="tabpanel" aria-labelledby="nav-diagram" hidden>
-    <div class="intro"><p class="eyebrow">The runner loop</p><h1>From example<br>to evidence.</h1></div>
     <p>Green path down the middle, red decision branch at the diff gate. Built with <a href="https://github.com/tt-a1i/archify">archify</a>.</p>
     <iframe class="diagram" src="../docs/approved-scenarios-runner.workflow.html" title="Approved scenarios runner loop"></iframe>
   </section>
@@ -242,6 +197,6 @@
 
   <footer>Sleep Merger <span>Approved examples · Pure functions · Human review</span></footer>
   </main>
-  <script type="module" src="./demo.js?v=runner-width-1"></script>
+  <script type="module" src="./demo.js?v=playground-reset-2"></script>
 </body>
 </html>

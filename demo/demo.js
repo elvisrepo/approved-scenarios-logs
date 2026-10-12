@@ -435,27 +435,20 @@ function runSweep() {
 $('sweep-run').addEventListener('click', runSweep);
 $('sweep-break').addEventListener('click', () => { const file = $('sweep-pick').value; suiteOverrides.set(file, breakText(approved.get(file), file)); runSweep(); });
 $('sweep-fix').addEventListener('click', () => { suiteOverrides.clear(); runSweep(); $('sweep-run').focus({ preventScroll: true }); });
-
-// The reference viewer and editable scenario runner start from passing files.
-function showApproved() { $('scenarioview').textContent = approved.get($('scenario-view-pick').value); }
-function runReplay() {
-  const text = $('replay-file').value;
-  try {
-    const scenario = parseScenario(text);
-    const actual = renderScenario(scenario, mergeSleep(scenario.sessions));
-    const matches = actual === normalizeText(text);
-    $('replay-out').innerHTML = `<p class="badge ${matches ? 'pass' : 'fail'}">${matches ? '✓ PASS · complete file matches' : '✗ FAIL · review the mismatch'}</p>${matches ? '' : comparisonTable(text, actual) + fullDiff(text, actual)}`;
-  } catch (error) {
-    $('replay-out').innerHTML = `<p class="notice error">✗ FAIL · rejected before execution: ${esc(error.message)}</p>`;
-  }
-}
-function selectReplay() { $('replay-file').value = approved.get($('replay-pick').value); runReplay(); }
-$('scenario-view-pick').addEventListener('change', showApproved);
-$('replay-pick').addEventListener('change', selectReplay);
-$('replay-run').addEventListener('click', runReplay);
-$('replay-break').addEventListener('click', () => { $('replay-file').value = breakText($('replay-file').value, $('replay-pick').value); runReplay(); });
-$('replay-fix').addEventListener('click', selectReplay);
-$('replay-file').addEventListener('input', () => { $('replay-out').textContent = 'Copy edited. Run test to check the current expectation.'; });
+$('playground-reset').addEventListener('click', () => {
+  $('preset-pick').value = defaultExampleFile;
+  suiteOverrides.clear();
+  $('sweep-out').replaceChildren();
+  $('sweep-status').textContent = 'No suite run yet.';
+  $('sweep-fix').disabled = true;
+  document.querySelectorAll('#tab-demo details').forEach((details) => { details.open = true; });
+  selectExample();
+  focusLoop(null);
+  $('runner-message').textContent = 'Playground reset. Start with the approved example.';
+  $('playground-reset').focus({ preventScroll: true });
+  updateRunnerOffset();
+  $('stage-file').scrollIntoView({ block: 'start' });
+});
 
 // Source files are fetched, so displayed code stays in sync with the project.
 const token = /(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|('(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\]|\\.)*`)|\b(import|export|from|function|return|const|let|var|if|else|for|of|new|type|interface|extends|satisfies|throws?)\b|\b(number|string|boolean|void|SleepSession|MergedSession|MergeResult|MergeLogEvent)\b|\b(\d+(?:\.\d+)?)\b|([A-Za-z_$][\w$]*)(?=\s*\()/g;
@@ -477,23 +470,9 @@ Promise.allSettled([
   ...[['types', 'types'], ['mergeSleep', 'merge'], ['logMerge', 'logmerge']].map(([file, id]) => loadReference(`../src/${file}.ts`, `src-${id}`, true)),
   loadReference('../tests/scenarios.test.ts', 'src-runner', true),
   loadReference('../logs/exact-duplicate.approved.log', 'logview'),
-  loadReference('../scenarios/chain-of-three.approved.md', 'side-md'),
 ]);
 $('loglist').innerHTML = '<button id="reload-log">Exact duplicate · approved log</button>';
 $('reload-log').addEventListener('click', () => loadReference('../logs/exact-duplicate.approved.log', 'logview'));
-$('side-code').textContent = `it('chain of three overlapping sessions becomes one', () => {
-  const result = mergeSleep([
-    { source: 'fitbit', start: '2026-10-01T22:00:00Z', end: '2026-10-02T00:00:00Z' },
-    { source: 'phone', start: '2026-10-01T23:30:00Z', end: '2026-10-02T02:00:00Z' },
-    { source: 'watch', start: '2026-10-02T01:30:00Z', end: '2026-10-02T04:00:00Z' },
-  ]);
-  expect(result.sessions).toEqual([
-    { start: '2026-10-01T22:00:00Z', end: '2026-10-02T04:00:00Z' },
-  ]);
-  expect(result.totalMinutes).toBe(360);
-  expect(result.overlapsMerged).toBe(2);
-});`;
-
 const loaded = await Promise.allSettled(examples.map(async (example) => {
   const text = await fetchText(`../scenarios/${example.file}`);
   parseScenario(text);
@@ -506,14 +485,12 @@ if (failure) {
   $('scenario-description').textContent = 'Examples could not be loaded.';
   ['sweep-run', 'sweep-break', 'sweep-pick'].forEach((id) => { $(id).disabled = true; });
 } else {
-  ['preset-pick', 'sweep-pick', 'scenario-view-pick', 'replay-pick'].forEach((id) => {
+  ['preset-pick', 'sweep-pick'].forEach((id) => {
     $(id).innerHTML = examples.map((example) => `<option value="${example.file}">${esc(example.name)}</option>`).join('');
     $(id).disabled = false;
     $(id).value = defaultExampleFile;
   });
-  ['replay-run', 'replay-break', 'replay-fix', 'sweep-run', 'sweep-break'].forEach((id) => { $(id).disabled = false; });
+  ['sweep-run', 'sweep-break', 'playground-reset'].forEach((id) => { $(id).disabled = false; });
   selectExample();
   focusLoop(null);
-  showApproved();
-  selectReplay();
 }
