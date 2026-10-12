@@ -89,10 +89,8 @@ const runnerContexts = {
   'rendered-actual': 'stage-compare',
   'comparison-full': 'stage-compare',
   'comparison-status': 'stage-compare',
-  'review-message': 'review-decision',
   'stage-experiment': 'stage-compare',
   'restore-expectation': 'stage-compare',
-  'demo-implementation': 'implementation-details',
 };
 function revealTarget(id, step, node) {
   const target = $(id);
@@ -243,9 +241,7 @@ function resetComparison(message, actualPlaceholder) {
   $('comparison-message').textContent = message;
   $('try-mistake').disabled = true;
   $('restore-expectation').hidden = !expectationBroken;
-  $('review-expectation').disabled = true;
   $('lesson-message').textContent = 'Compare the example first, then try an incorrect expectation to see the test fail.';
-  $('review-message').textContent = 'Compare the output before deciding whether anything needs changing.';
 }
 function renderActual() {
   if (!currentResult && !executeExample()) return undefined;
@@ -269,10 +265,6 @@ function showComparison(restored = false) {
   $('comparison-message').textContent = matches ? 'Every line of the expected and actual files matches.' : 'The files differ. Highlighted lines show the mismatches.';
   $('try-mistake').disabled = !matches;
   $('restore-expectation').hidden = !expectationBroken;
-  $('review-expectation').disabled = matches;
-  $('review-message').textContent = matches
-    ? 'Every line matches. No correction is needed; try an incorrect expectation to explore the review branch.'
-    : `Which side needs changing: the expectation or the implementation? ${currentExample.reason} This experiment changed only the browser expectation.`;
   setStep(expectationBroken || restored ? 'review' : 'compare');
   return matches;
 }
@@ -334,26 +326,6 @@ $('restore-expectation').addEventListener('click', () => {
   $('try-mistake').focus({ preventScroll: true });
 });
 
-function reviewExpectation() {
-  const matches = showComparison();
-  if (matches === undefined) return;
-  if (expectationBroken) {
-    $('review-message').textContent = `Review the incorrect browser expectation, then restore it when ready. ${currentExample.reason}`;
-    $('runner-message').textContent = 'Review the expectation. Restore the browser copy when ready.';
-    revealTarget('restore-expectation', 'review', 'fixfile');
-  } else {
-    $('review-message').textContent = 'The current expectation matches the output. There is nothing to restore.';
-    $('runner-message').textContent = 'The expectation matches. No file correction is needed.';
-    revealTarget('review-message', 'review', 'fixfile');
-  }
-}
-function inspectImplementation() {
-  $('runner-message').textContent = 'Inspect the merging implementation against the approved behavior.';
-  revealTarget('demo-implementation', 'review', 'fixcode');
-}
-$('review-expectation').addEventListener('click', reviewExpectation);
-$('review-code').addEventListener('click', inspectImplementation);
-
 function runNode(id) {
   if (!currentScenario) {
     $('runner-message').textContent = 'Wait for the selected example to load before exploring its steps.';
@@ -395,11 +367,9 @@ function runNode(id) {
     }
     case 'decide':
       if (showComparison() === undefined) break;
-      $('runner-message').textContent = 'Review the evidence and decide which side, if any, needs changing.';
+      $('runner-message').textContent = 'Try an incorrect expectation or restore it, then review the comparison.';
       revealTarget('stage-experiment', 'review', id);
       break;
-    case 'fixfile': reviewExpectation(); break;
-    case 'fixcode': inspectImplementation(); break;
   }
 }
 
@@ -480,7 +450,6 @@ async function loadReference(path, id, code = false) {
 Promise.allSettled([
   ...[['types', 'types'], ['mergeSleep', 'merge'], ['logMerge', 'logmerge']].map(([file, id]) => loadReference(`../src/${file}.ts`, `src-${id}`, true)),
   loadReference('../tests/scenarios.test.ts', 'src-runner', true),
-  loadReference('../src/mergeSleep.ts', 'demo-implementation', true),
   loadReference('../logs/exact-duplicate.approved.log', 'logview'),
   loadReference('../scenarios/chain-of-three.approved.md', 'side-md'),
 ]);

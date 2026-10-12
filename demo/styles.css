@@ -88,7 +88,6 @@ code { overflow-wrap: anywhere; font-size: .9em; }
 .metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; border-top: 1px solid var(--line); padding-top: 22px; margin-top: 24px; }
 .metrics strong { display: block; font-size: clamp(1.1rem, 2.5vw, 1.65rem); letter-spacing: -.04em; color: var(--accent); }
 .metrics span { color: var(--muted); font-size: .75rem; }
-.lesson-card { border-left: 4px solid var(--accent); }
 .actions, .row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 18px; }
 .inline-label { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0; flex: 1; min-width: 0; }
 .inline-label select { margin: 0; width: auto; max-width: 100%; flex: 1; }
@@ -104,7 +103,6 @@ code { overflow-wrap: anywhere; font-size: .9em; }
 .traditional-test h3 { margin: 0; }
 .traditional-test .micro { margin-top: 0; }
 .traditional-test pre { margin-bottom: 0; }
-.review-decision { margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--line); }
 #parse-status { margin-left: 8px; }
 .diff2, .sidebyside { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 18px; }
 .diff2 > *, .sidebyside > * { min-width: 0; }
