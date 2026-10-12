@@ -170,7 +170,7 @@ footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10
 /* The demo is a full-width workbench with a persistent graphical sidebar. */
 main { max-width: none; width: 100%; margin: 0; }
 .site-header { padding: 18px 24px; }
-#tab-demo { display: grid; grid-template-columns: clamp(300px, 23vw, 370px) minmax(0, 1fr); gap: 24px; align-items: start; padding-top: 20px; }
+#tab-demo { display: grid; grid-template-columns: var(--runner-width, 370px) minmax(0, 1fr); gap: 24px; align-items: start; padding-top: 20px; }
 .demo-content { min-width: 0; }
 .runner-overview { top: 12px; margin: 0; padding: 16px; max-height: calc(100svh - 24px); overflow-y: auto; }
 .runner-overview .card-heading { gap: 10px; }
@@ -196,7 +196,7 @@ main { max-width: none; width: 100%; margin: 0; }
 .demo-content h1 { font-size: clamp(2.2rem, 3vw, 3.2rem); margin-bottom: 14px; }
 .demo-content .intro > p:last-child { max-width: 780px; margin-bottom: 0; }
 @media (max-width: 1100px) and (min-width: 701px) {
-  #tab-demo { grid-template-columns: 280px minmax(0, 1fr); gap: 18px; }
+  #tab-demo { grid-template-columns: var(--runner-width, 280px) minmax(0, 1fr); gap: 18px; }
   .workspace, .comparison-layout { grid-template-columns: minmax(0, 1fr); }
   .traditional-test { border-left: 0; border-top: 1px solid var(--line); padding: 24px 0 0; }
   .steps p { display: none; }
@@ -220,3 +220,14 @@ main { max-width: none; width: 100%; margin: 0; }
 .experiment-panel { margin-top: 24px; padding: 20px; background: #f0f7f5; border: 1px solid #cbded7; border-radius: 12px; }
 .experiment-panel h2 { font-size: 1.1rem; }
 .experiment-panel .micro { margin-bottom: 0; }
+
+.runner-width-control { margin-top: 14px; }
+.runner-width-control label { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+.runner-width-control output { color: var(--muted); font-weight: 400; font-variant-numeric: tabular-nums; }
+#runner-width { display: block; width: 100%; margin: 0; accent-color: var(--accent); cursor: ew-resize; min-height: 24px; }
+.demo-content { container-type: inline-size; }
+@container (max-width: 720px) {
+  .workspace { grid-template-columns: minmax(0, 1fr); }
+  .steps p { display: none; }
+}
+@media (max-width: 700px) { .runner-width-control { display: none; } }

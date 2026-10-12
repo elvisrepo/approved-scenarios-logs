@@ -17,6 +17,7 @@ const examples = [
 ];
 const byFile = new Map(examples.map((item) => [item.file, item]));
 const approved = new Map();
+const defaultExampleFile = 'chain-of-three.approved.md';
 const breakText = (text, file) => byFile.get(file).changes.reduce((copy, [correct, wrong]) => copy.replace(correct, wrong), text);
 async function fetchText(path) {
   const response = await fetch(path);
@@ -33,6 +34,7 @@ function activateTab(button, focus = false) {
     tab.tabIndex = active ? 0 : -1;
     $(`tab-${tab.dataset.tab}`).hidden = !active;
   });
+  if (button.dataset.tab === 'demo') updateRunnerWidth();
   if (focus) button.focus();
 }
 tabs.forEach((tab, index) => {
@@ -72,6 +74,30 @@ function updateRunnerOffset() {
 }
 new ResizeObserver(updateRunnerOffset).observe($('loop-wrap'));
 window.addEventListener('resize', updateRunnerOffset);
+// Preserve the requested width while fitting the current desktop viewport.
+let preferredRunnerWidth;
+try { preferredRunnerWidth = Number(localStorage.getItem('sleep-merger.runner-width')) || undefined; } catch {}
+function updateRunnerWidth() {
+  const slider = $('runner-width');
+  const narrow = window.matchMedia('(max-width: 700px)').matches;
+  const available = $('tab-demo').clientWidth;
+  const max = Math.max(280, Math.min(620, Math.floor((available - 384) / 10) * 10));
+  slider.max = String(max);
+  const initial = innerWidth <= 1100 ? 280 : Math.min(370, Math.max(300, Math.round(innerWidth * .23 / 10) * 10));
+  const width = Math.min(max, Math.max(280, preferredRunnerWidth ?? initial));
+  slider.value = String(width);
+  $('runner-width-value').value = `${width} px`;
+  $('tab-demo').style.setProperty('--runner-width', `${width}px`);
+  slider.disabled = narrow;
+  updateRunnerOffset();
+}
+$('runner-width').addEventListener('input', () => {
+  preferredRunnerWidth = Number($('runner-width').value);
+  try { localStorage.setItem('sleep-merger.runner-width', String(preferredRunnerWidth)); } catch {}
+  updateRunnerWidth();
+});
+window.addEventListener('resize', updateRunnerWidth);
+updateRunnerWidth();
 const stepDescriptions = { input: 'Start with an approved example.', run: 'Run the pure merging function.', compare: 'Compare the whole result with the expectation.', review: 'Read the mismatch and review the expectation.' };
 function setStep(step, node = { input: 'fixture', run: 'execute', compare: 'compare', review: 'decide' }[step]) {
   document.querySelectorAll('[data-step]').forEach((button) => {
@@ -124,7 +150,7 @@ function visitStep(step) {
 }
 document.querySelectorAll('[data-step]').forEach((button) => button.addEventListener('click', () => visitStep(button.dataset.step)));
 
-let currentExample = examples[0];
+let currentExample = byFile.get(defaultExampleFile);
 let currentScenario;
 let currentResult;
 let expectationBroken = false;
@@ -483,6 +509,7 @@ if (failure) {
   ['preset-pick', 'sweep-pick', 'scenario-view-pick', 'replay-pick'].forEach((id) => {
     $(id).innerHTML = examples.map((example) => `<option value="${example.file}">${esc(example.name)}</option>`).join('');
     $(id).disabled = false;
+    $(id).value = defaultExampleFile;
   });
   ['replay-run', 'replay-break', 'replay-fix', 'sweep-run', 'sweep-break'].forEach((id) => { $(id).disabled = false; });
   selectExample();
