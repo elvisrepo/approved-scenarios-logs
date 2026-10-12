@@ -23,6 +23,11 @@
   <main>
   <noscript><p class="notice">Enable JavaScript to run the examples and explore the timeline.</p></noscript>
   <section id="tab-demo" role="tabpanel" aria-labelledby="nav-demo">
+    <section class="card runner-overview" id="loop-wrap" aria-labelledby="runner-title">
+      <div class="card-heading"><h2 id="runner-title">Runner loop <span class="badge subtle">Selected example</span></h2><button id="loop-reset">Show full loop</button></div>
+      <p id="runner-message" class="muted" role="status">Click a node to explore its step. The loop follows your progress.</p>
+      <iframe id="loop-diagram" class="loop" src="../docs/approved-scenarios-runner.workflow.html?embed=1" title="Interactive approved scenarios runner loop"></iframe>
+    </section>
     <div class="intro"><p class="eyebrow">One night. Several sources. One clear result.</p><h1>See the overlap.<br>Trust the result.</h1><p>Combine sleep records, compare the result with an approved example, and discover how a readable test catches a mistake.</p></div>
     <nav class="steps" aria-label="Example steps">
       <button data-step="input" aria-current="step"><span>1</span> Input</button>
@@ -40,7 +45,8 @@
         <ul id="list" class="session-list" aria-label="Input sleep records"></ul>
         <button id="merge" class="primary wide" disabled>Run example <span aria-hidden="true">→</span></button>
         <p class="micro">Runs the same pure function as the tests.</p>
-        <details><summary>View approved Markdown</summary><pre id="demo-file">Loading…</pre></details>
+        <details open><summary>View approved Markdown</summary><pre id="demo-file">Loading…</pre></details>
+        <details id="parsed-details" open><summary>Inspect parsed input <span id="parse-status" class="badge subtle" role="status">Not validated yet</span></summary><p class="micro">Validation checks the file format. Comparison checks whether the expected outputs match.</p><pre id="parsed-input">Choose Parse and validate to inspect the input.</pre></details>
       </section>
       <section class="card timeline-card" id="stage-run" aria-labelledby="timeline-title">
         <div class="card-heading"><div><p class="eyebrow">02 / Run</p><h2 id="timeline-title">One shared timeline</h2></div><span class="badge subtle">UTC</span></div>
@@ -55,24 +61,37 @@
             <div><strong id="session-count">—</strong><span id="session-label">merged sessions</span></div>
             <div><strong id="overlaps">—</strong><span id="overlap-label">overlaps merged</span></div>
           </div>
-          <details><summary>Inspect result and logs</summary><h3>Result JSON</h3><pre id="result"></pre><h3>Captured JSON events</h3><pre id="logs"></pre></details>
         </div>
+        <details open><summary>Inspect result and logs</summary><h3>Result JSON</h3><pre id="result">Run the example to see the result.</pre><h3>Captured JSON events</h3><pre id="logs">Run the example to capture the log events.</pre></details>
       </section>
     </div>
     <section class="card lesson-card" id="stage-compare" aria-labelledby="compare-title">
       <div class="card-heading"><div><p class="eyebrow">03 / Compare → 04 / Review</p><h2 id="compare-title">Can the test catch a mistake?</h2></div><span id="comparison-status" class="badge" role="status">Not run yet</span></div>
       <p id="lesson-message" class="muted" aria-live="polite">Run the example to compare every result with the approved file.</p>
-      <div id="comparison" hidden></div>
-      <div class="actions"><button id="try-mistake" disabled>Try an incorrect expectation</button><button id="restore-expectation" class="primary" hidden>Restore correct expectation</button></div>
-      <p class="micro">This experiment changes a copy in your browser. Approved files on disk stay untouched.</p>
-      <details id="comparison-details" hidden><summary>Inspect the complete file comparison</summary><div id="comparison-full"></div></details>
+      <div class="comparison-layout">
+        <div>
+          <h3>Expected &amp; actual</h3>
+          <p id="comparison-empty" class="muted">Run the example to check these expectations.</p>
+          <div id="comparison" hidden></div>
+          <div class="actions"><button id="try-mistake" disabled>Try an incorrect expectation</button><button id="restore-expectation" class="primary" hidden>Restore correct expectation</button></div>
+          <p class="micro">This experiment changes a copy in your browser. Approved files on disk stay untouched.</p>
+        </div>
+        <section class="traditional-test" aria-labelledby="traditional-test-title">
+          <div class="card-heading"><h3 id="traditional-test-title">Equivalent traditional test</h3><span class="badge subtle">Vitest</span></div>
+          <p id="traditional-test-note" class="micro">The same input and expectations, expressed as assertions.</p>
+          <pre class="code" id="traditional-test-code" tabindex="0" aria-label="Traditional test code for the selected example">Loading the example…</pre>
+        </section>
+      </div>
+      <details id="rendered-details" open><summary>Inspect rendered actual Markdown</summary><pre id="rendered-actual">Run or render the example to rebuild its actual output as Markdown.</pre></details>
+      <details id="comparison-details" open><summary>Inspect the complete file comparison</summary><div id="comparison-full"><p class="muted">Run the example to compare the complete files.</p></div></details>
+      <section class="review-decision" aria-labelledby="review-title">
+        <h3 id="review-title">Review the expectation or the implementation</h3>
+        <p id="review-message" class="muted" role="status">Compare the example first. A mismatch calls for a human decision about which side needs changing.</p>
+        <div class="actions"><button id="review-expectation" disabled>Review expectation</button><button id="review-code">Inspect implementation</button></div>
+        <details id="implementation-details" open><summary>Inspect mergeSleep implementation <span class="file">src/mergeSleep.ts</span></summary><p class="micro">This is the real source. Changes to behavior belong in src/ and are checked against the approved examples.</p><pre class="code" id="demo-implementation" tabindex="0">Loading…</pre></details>
+      </section>
     </section>
-    <details class="card diagram-disclosure" id="loop-wrap">
-      <summary>Explore the runner <span class="muted">Follow the same steps in the diagram</span></summary>
-      <p>Click a node to explore its step. The diagram follows your progress through the example.</p>
-      <button id="loop-reset">Show full loop</button>
-      <iframe id="loop-diagram" class="loop" loading="lazy" src="../docs/approved-scenarios-runner.workflow.html?embed=1" title="Interactive approved scenarios runner loop"></iframe>
-    </details>
+
     <section class="card" id="sweep" aria-labelledby="sweep-title">
       <div class="card-heading"><div><p class="eyebrow">Take it further</p><h2 id="sweep-title">Check every approved scenario</h2></div><span class="badge subtle">6 examples</span></div>
       <p class="muted">The runner discovers each approved file, executes it, and compares the entire result. Here you can try the same loop across all six examples.</p>
@@ -84,19 +103,19 @@
 
   <section id="tab-source" role="tabpanel" aria-labelledby="nav-source" hidden>
     <div class="intro"><p class="eyebrow">Under the hood</p><h1>Small functions.<br>Clear responsibilities.</h1><p>The playground uses the real implementation and scenario format, compiled for the browser.</p></div>
-    <details>
+    <details open>
       <summary>Types — the contract everything agrees on <span class="file">src/types.ts</span></summary>
       <pre class="code" id="src-types">loading…</pre>
     </details>
-    <details>
+    <details open>
       <summary>mergeSleep — the pure function under test <span class="file">src/mergeSleep.ts</span></summary>
       <pre class="code" id="src-merge">loading…</pre>
     </details>
-    <details>
+    <details open>
       <summary>logMerge — the logging seam (still pure: returns lines) <span class="file">src/logMerge.ts</span></summary>
       <pre class="code" id="src-logmerge">loading…</pre>
     </details>
-    <details>
+    <details open>
       <summary>scenarios.test.ts — the runner, written once and reviewed closely <span class="file">tests/scenarios.test.ts</span></summary>
       <pre class="code" id="src-runner">loading…</pre>
     </details>

@@ -48,23 +48,33 @@ tabs.forEach((tab, index) => {
 });
 
 const loopBase = '../docs/approved-scenarios-runner.workflow.html?embed=1';
-let diagramFocus = 'fixture';
 function focusLoop(node) {
-  diagramFocus = node;
-  if ($('loop-wrap').open) $('loop-diagram').src = `${loopBase}#focus=${node}`;
+  $('loop-diagram').src = `${loopBase}#focus=${node}`;
 }
-$('loop-wrap').addEventListener('toggle', () => {
-  if ($('loop-wrap').open) focusLoop(diagramFocus);
-});
-$('loop-reset').addEventListener('click', () => { diagramFocus = ''; $('loop-diagram').src = loopBase; });
+$('loop-reset').addEventListener('click', () => { $('loop-diagram').src = loopBase; });
+// Keep the step bar and scroll targets below the pinned, responsive diagram.
+function updateRunnerOffset() {
+  document.documentElement.style.setProperty('--runner-offset', `${Math.ceil($('loop-wrap').getBoundingClientRect().height) + 24}px`);
+}
+new ResizeObserver(updateRunnerOffset).observe($('loop-wrap'));
 const stepDescriptions = { input: 'Start with an approved example.', run: 'Run the pure merging function.', compare: 'Compare the whole result with the expectation.', review: 'Read the mismatch and review the expectation.' };
-function setStep(step) {
+function setStep(step, node = { input: 'fixture', run: 'execute', compare: 'compare', review: 'decide' }[step]) {
   document.querySelectorAll('[data-step]').forEach((button) => {
     if (button.dataset.step === step) button.setAttribute('aria-current', 'step');
     else button.removeAttribute('aria-current');
   });
   $('step-help').textContent = stepDescriptions[step];
-  focusLoop({ input: 'fixture', run: 'execute', compare: 'compare', review: 'decide' }[step]);
+  focusLoop(node);
+}
+function revealTarget(id, step, node) {
+  const target = $(id);
+  const disclosure = target.closest('details');
+  if (disclosure) disclosure.open = true;
+  setStep(step, node);
+  if (!target.matches('button, select, input, textarea, a[href], [tabindex]')) target.tabIndex = -1;
+  target.focus({ preventScroll: true });
+  updateRunnerOffset();
+  target.scrollIntoView({ block: 'start' });
 }
 function visitStep(step) {
   setStep(step);
@@ -123,21 +133,74 @@ function comparisonTable(expected, actual) {
     return `<tr class="${a === b ? '' : 'different'}"><th scope="row">${label}${a === b ? '' : ' · mismatch'}</th><td>${esc(a)}</td><td>${esc(b)}</td></tr>`;
   }).join('')}</tbody></table>`;
 }
-function showComparison(restored = false) {
+// Assertions come from the chosen expectation, independently of mergeSleep's
+// output. Reuse the scenario parser to expand clock ranges into overnight UTC.
+function traditionalTest(scenario, expected) {
+  const ranges = fieldValue(expected, 'sessions');
+  const expectedSessions = ranges === 'none' ? [] : parseScenario(
+    `# Expected blocks\n\n## Input\n${ranges.split(', ').map((range) => `expected ${range}`).join('\n')}\n\n## Result\nsessions: none\ntotal_minutes: 0\noverlaps_merged: 0\n`,
+  ).sessions;
+  const quote = (value) => `'${value.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
+  const inputs = scenario.sessions.map((session) =>
+    `    { source: ${quote(session.source)},\n      start: ${quote(session.start)},\n      end: ${quote(session.end)} },`,
+  ).join('\n');
+  const outputs = expectedSessions.map((session) =>
+    `    { start: ${quote(session.start)},\n      end: ${quote(session.end)} },`,
+  ).join('\n');
+  return `it(${quote(scenario.title)}, () => {\n  const result = mergeSleep([\n${inputs}\n  ]);\n\n  expect(result.sessions).toEqual([${outputs ? `\n${outputs}\n  ` : ''}]);\n  expect(result.totalMinutes).toBe(${fieldValue(expected, 'total_minutes')});\n  expect(result.overlapsMerged).toBe(${fieldValue(expected, 'overlaps_merged')});\n});`;
+}
+function showTraditionalTest(expected) {
+  $('traditional-test-code').innerHTML = highlight(traditionalTest(currentScenario, expected));
+  $('traditional-test-note').textContent = expectationBroken
+    ? 'These assertions now contain the same incorrect expectation shown in the comparison.'
+    : 'The same input and approved expectations, expressed as assertions.';
+}
+function selectedExpectation() {
   const original = approved.get(currentExample.file);
-  const expected = expectationBroken ? breakText(original, currentExample.file) : original;
+  return expectationBroken ? breakText(original, currentExample.file) : original;
+}
+function validateExample() {
+  if (!currentScenario) return false;
+  try {
+    currentScenario = parseScenario(selectedExpectation());
+    $('parsed-input').textContent = JSON.stringify(currentScenario.sessions, null, 2);
+    $('parse-status').textContent = `✓ Valid · ${currentScenario.sessions.length} sessions`;
+    $('parse-status').className = 'badge pass';
+    return true;
+  } catch (error) {
+    $('parsed-input').textContent = `Rejected before execution: ${error.message}`;
+    $('parse-status').textContent = '✗ Invalid format';
+    $('parse-status').className = 'badge fail';
+    return false;
+  }
+}
+function renderActual() {
+  if (!currentResult && !executeExample()) return undefined;
   const actual = renderScenario(currentScenario, currentResult);
+  $('rendered-actual').textContent = actual;
+  return actual;
+}
+function showComparison(restored = false) {
+  const actual = renderActual();
+  if (actual === undefined) return undefined;
+  const expected = selectedExpectation();
   const matches = normalizeText(expected) === actual;
   $('comparison-status').textContent = matches ? '✓ PASS · all outputs match' : '✗ FAIL · expectation differs';
   $('comparison-status').className = `badge ${matches ? 'pass' : 'fail'}`;
   $('lesson-message').textContent = matches ? (restored ? `The correct expectation passes again. ${currentExample.reason}` : 'The complete rendered file matches the approved example. Now try an incorrect expectation and watch the test catch it.') : `The test caught the mistake. ${currentExample.reason}`;
   $('comparison').hidden = false;
+  $('comparison-empty').hidden = true;
   $('comparison').innerHTML = comparisonTable(expected, actual);
+  showTraditionalTest(expected);
   $('comparison-full').innerHTML = fullDiff(expected, actual);
-  $('comparison-details').hidden = false;
   $('try-mistake').disabled = !matches;
   $('restore-expectation').hidden = !expectationBroken;
+  $('review-expectation').disabled = matches;
+  $('review-message').textContent = matches
+    ? 'Every line matches. No correction is needed; try an incorrect expectation to explore the review branch.'
+    : `Which side needs changing: the expectation or the implementation? ${currentExample.reason} This experiment changed only the browser expectation.`;
   setStep(expectationBroken || restored ? 'review' : 'compare');
+  return matches;
 }
 function selectExample() {
   currentExample = byFile.get($('preset-pick').value);
@@ -150,20 +213,31 @@ function selectExample() {
   $('merge').disabled = false;
   $('result-empty').hidden = false;
   $('result-summary').hidden = true;
+  $('result').textContent = 'Run the example to see the result.';
+  $('logs').textContent = 'Run the example to capture the log events.';
+  $('rendered-actual').textContent = 'Run or render the example to rebuild its actual output as Markdown.';
+  $('parsed-input').textContent = 'Choose Parse and validate to inspect the input.';
+  $('parse-status').textContent = 'Not validated yet';
+  $('parse-status').className = 'badge subtle';
   $('comparison').hidden = true;
+  $('comparison-empty').hidden = false;
+  $('comparison-empty').textContent = 'Run the example to check these expectations.';
   $('comparison-status').textContent = 'Not run yet';
   $('comparison-status').className = 'badge';
   $('lesson-message').textContent = 'Run the example to compare every result with the approved file.';
   $('try-mistake').disabled = true;
   $('restore-expectation').hidden = true;
-  $('comparison-details').hidden = true;
-  $('comparison-details').open = false;
+  $('comparison-full').innerHTML = '<p class="muted">Run the example to compare the complete files.</p>';
+  $('review-expectation').disabled = true;
+  $('review-message').textContent = 'Compare the example first. A mismatch calls for a human decision about which side needs changing.';
+  $('runner-message').textContent = 'Click a node to explore its step. The loop follows your progress.';
   $('sweep-pick').value = currentExample.file;
+  showTraditionalTest(approved.get(currentExample.file));
   setStep('input');
   renderTimeline();
 }
-function runExample() {
-  if (!currentScenario) return;
+function executeExample() {
+  if (!validateExample()) return false;
   currentResult = mergeSleep(currentScenario.sessions);
   $('total').textContent = duration(currentResult.totalMinutes);
   $('session-count').textContent = currentResult.sessions.length;
@@ -175,33 +249,138 @@ function runExample() {
   $('result-empty').hidden = true;
   $('result-summary').hidden = false;
   renderTimeline();
+  $('rendered-actual').textContent = 'Choose Render actual to rebuild this result as Markdown.';
+  $('comparison').hidden = true;
+  $('comparison-empty').hidden = false;
+  $('comparison-empty').textContent = 'Choose Diff file vs actual to compare this result with the expectation.';
+  $('comparison-status').textContent = 'Not compared yet';
+  $('comparison-status').className = 'badge subtle';
+  $('comparison-full').innerHTML = '<p class="muted">Choose Diff file vs actual to compare the complete files.</p>';
+  $('try-mistake').disabled = true;
+  $('review-expectation').disabled = true;
+  $('review-message').textContent = 'The merge has run. Compare its output before deciding whether anything needs changing.';
+  $('lesson-message').textContent = 'The merge has run. Render and compare its output with the selected expectation.';
+  setStep('run');
+  return true;
+}
+function runExample() {
+  if (!executeExample()) return;
   showComparison();
 }
 $('preset-pick').addEventListener('change', selectExample);
 $('merge').addEventListener('click', runExample);
 $('try-mistake').addEventListener('click', () => { if (!currentResult) return; expectationBroken = true; showComparison(); $('restore-expectation').focus({ preventScroll: true }); });
-$('restore-expectation').addEventListener('click', () => { expectationBroken = false; showComparison(true); $('try-mistake').focus({ preventScroll: true }); });
+$('restore-expectation').addEventListener('click', () => {
+  expectationBroken = false;
+  if (showComparison(true)) {
+    setStep('compare', 'pass');
+    $('runner-message').textContent = 'Correct expectation restored. The complete file passes again.';
+  }
+  $('try-mistake').focus({ preventScroll: true });
+});
 
-// Retain the interactive diagram as an optional second route through the demo.
+function reviewExpectation() {
+  const matches = showComparison();
+  if (matches === undefined) return;
+  if (expectationBroken) {
+    $('review-message').textContent = `Review the incorrect browser expectation, then restore it when ready. ${currentExample.reason}`;
+    $('runner-message').textContent = 'Review the expectation. Restore the browser copy when ready.';
+    revealTarget('restore-expectation', 'review', 'fixfile');
+  } else {
+    $('review-message').textContent = 'The current expectation matches the output. There is nothing to restore.';
+    $('runner-message').textContent = 'The expectation matches. No file correction is needed.';
+    revealTarget('review-message', 'review', 'fixfile');
+  }
+}
+function inspectImplementation() {
+  $('runner-message').textContent = 'Inspect the merging implementation against the approved behavior.';
+  revealTarget('demo-implementation', 'review', 'fixcode');
+}
+$('review-expectation').addEventListener('click', reviewExpectation);
+$('review-code').addEventListener('click', inspectImplementation);
+
+function runNode(id) {
+  if (!currentScenario) {
+    $('runner-message').textContent = 'Wait for the selected example to load before exploring its steps.';
+    return;
+  }
+  switch (id) {
+    case 'fixture':
+      $('runner-message').textContent = 'The selected approved file supplies both input and expected output.';
+      revealTarget('demo-file', 'input', id);
+      break;
+    case 'parse':
+      validateExample();
+      $('runner-message').textContent = 'Validate the format and inspect the parsed UTC sessions.';
+      revealTarget('parsed-input', 'input', id);
+      break;
+    case 'execute':
+      if (!executeExample()) { revealTarget('parsed-input', 'input', 'parse'); break; }
+      $('runner-message').textContent = 'Merge complete. Inspect the result before rendering and comparing it.';
+      revealTarget('result', 'run', id);
+      break;
+    case 'render':
+      if (renderActual() === undefined) break;
+      $('runner-message').textContent = 'The actual result is rendered into the same Markdown format as the file.';
+      revealTarget('rendered-actual', 'compare', id);
+      break;
+    case 'compare':
+      if (showComparison() === undefined) break;
+      $('runner-message').textContent = 'Compare the entire expected file with the rendered actual result.';
+      revealTarget('comparison-full', 'compare', id);
+      break;
+    case 'pass': {
+      const matches = showComparison();
+      if (matches === undefined) break;
+      $('runner-message').textContent = matches
+        ? 'PASS verified: every line of the expected and actual files matches.'
+        : 'This example fails. Review the mismatch before following the PASS branch.';
+      revealTarget(matches ? 'comparison-status' : 'review-message', matches ? 'compare' : 'review', matches ? id : 'decide');
+      break;
+    }
+    case 'decide':
+      if (showComparison() === undefined) break;
+      $('runner-message').textContent = 'Review the evidence and decide which side, if any, needs changing.';
+      revealTarget('review-message', 'review', id);
+      break;
+    case 'fixfile': reviewExpectation(); break;
+    case 'fixcode': inspectImplementation(); break;
+  }
+}
+
+// The embedded nodes use one action handler. Stop SVG delegation from changing
+// the selected node again after the demo has chosen the appropriate outcome.
 function bindLoopNodes() {
   const doc = $('loop-diagram').contentDocument;
   if (!doc) return;
-  const actions = {
-    fixture: () => visitStep('input'), parse: () => visitStep('input'),
-    execute: () => { runExample(); visitStep('run'); }, render: () => { runExample(); visitStep('compare'); },
-    compare: () => visitStep('compare'), pass: () => visitStep('compare'), decide: () => visitStep('review'),
-    fixfile: () => visitStep('review'), fixcode: () => visitStep('review'),
-  };
-  doc.querySelectorAll('[data-node-id]').forEach((node) => {
-    const action = actions[node.getAttribute('data-node-id')];
-    if (!action || node.dataset.demoBound) return;
+  // Fit the existing SVG to this compact viewport rather than clipping its
+  // natural page height. The standalone diagram keeps its original layout.
+  if (!doc.getElementById('demo-runner-fit')) {
+    const style = doc.createElement('style');
+    style.id = 'demo-runner-fit';
+    style.textContent = `
+      html[data-embed="true"], html[data-embed="true"] body,
+      html[data-embed="true"] .container { height: 100%; min-height: 0; }
+      html[data-embed="true"] .diagram-container { height: 100%; min-height: 0; padding: 0; }
+      html[data-embed="true"] .diagram-container > svg { width: 100% !important; height: 100% !important; min-width: 0 !important; }
+    `;
+    doc.head.appendChild(style);
+  }
+  doc.querySelectorAll('.diagram-container > svg [data-node-id]').forEach((node) => {
+    if (node.dataset.demoBound) return;
     node.dataset.demoBound = 'true';
     node.style.cursor = 'pointer';
     node.setAttribute('role', 'button');
     node.setAttribute('tabindex', '0');
-    node.setAttribute('aria-label', `Explore ${node.getAttribute('data-node-id')} step`);
-    node.addEventListener('click', action);
-    node.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); action(); } });
+    node.setAttribute('aria-label', `Explore ${node.dataset.nodeLabel}`);
+    const activate = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (event.type === 'click' && doc.querySelector('.diagram-container').getAttribute('data-just-panned') === 'true') return;
+      runNode(node.dataset.nodeId);
+    };
+    node.addEventListener('click', activate);
+    node.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') activate(event); });
   });
 }
 $('loop-diagram').addEventListener('load', bindLoopNodes);
@@ -225,7 +404,8 @@ function runSweep() {
   }).join('');
   $('sweep-status').textContent = `${passed} passed · ${failed} failed · ${examples.length} examples checked`;
   $('sweep-fix').disabled = suiteOverrides.size === 0;
-  focusLoop(failed ? 'compare' : 'pass');
+  // The pinned loop follows the selected example. Suite experiments have
+  // their own result and restoration controls, without changing that context.
 }
 $('sweep-run').addEventListener('click', runSweep);
 $('sweep-break').addEventListener('click', () => { const file = $('sweep-pick').value; suiteOverrides.set(file, breakText(approved.get(file), file)); runSweep(); });
@@ -271,6 +451,7 @@ async function loadReference(path, id, code = false) {
 Promise.allSettled([
   ...[['types', 'types'], ['mergeSleep', 'merge'], ['logMerge', 'logmerge']].map(([file, id]) => loadReference(`../src/${file}.ts`, `src-${id}`, true)),
   loadReference('../tests/scenarios.test.ts', 'src-runner', true),
+  loadReference('../src/mergeSleep.ts', 'demo-implementation', true),
   loadReference('../logs/exact-duplicate.approved.log', 'logview'),
   loadReference('../scenarios/chain-of-three.approved.md', 'side-md'),
 ]);
@@ -307,6 +488,7 @@ if (failure) {
   });
   ['replay-run', 'replay-break', 'replay-fix', 'sweep-run', 'sweep-break'].forEach((id) => { $(id).disabled = false; });
   selectExample();
+  $('loop-diagram').src = loopBase;
   showApproved();
   selectReplay();
 }
