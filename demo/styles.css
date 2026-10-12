@@ -167,9 +167,9 @@ footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10
   .runner-overview h2 .badge { display: none; }
   .runner-tools { gap: 8px; font-size: .75rem; }
 }
-/* The demo is a full-width workbench with a persistent graphical sidebar. */
-main { max-width: none; width: 100%; margin: 0; }
-.site-header { padding: 18px 24px; }
+/* Center the workbench while keeping its graphical sidebar persistent. */
+main { max-width: 1680px; width: 100%; margin: 0 auto; }
+.site-header { padding: 18px max(24px, calc((100vw - 1632px) / 2)); }
 #tab-demo { display: grid; grid-template-columns: var(--runner-width, 370px) minmax(0, 1fr); gap: 24px; align-items: start; padding-top: 20px; }
 .demo-content { min-width: 0; }
 .runner-overview { top: 12px; margin: 0; padding: 16px; max-height: calc(100svh - 24px); overflow-y: auto; }
@@ -231,3 +231,47 @@ main { max-width: none; width: 100%; margin: 0; }
   .steps p { display: none; }
 }
 @media (max-width: 700px) { .runner-width-control { display: none; } }
+/* Denser desktop content; the runner and narrow-screen sizing stay independent. */
+@media (min-width: 701px) {
+  .demo-content { font-size: 13px; line-height: 1.35; }
+  .demo-content h2, .demo-content .experiment-panel h2 { font-size: 16px; margin-bottom: 8px; }
+  .demo-content h3 { font-size: 12px; margin-bottom: 8px; }
+  .demo-content p { margin-bottom: 8px; }
+  .demo-content .card { padding: 10px; margin-bottom: 10px; }
+  .demo-content .card-heading { gap: 8px; margin-bottom: 8px; }
+  .demo-content .workspace { gap: 10px; margin-bottom: 10px; }
+  .demo-content .workspace > .card { margin-bottom: 0; }
+  .demo-content .micro, .demo-content label, .demo-content summary,
+  .demo-content .session-time, .demo-content .timeline-key,
+  .demo-content .timeline-label, .demo-content .track-placeholder { font-size: 12px; }
+  .demo-content .micro { margin-top: 8px; }
+  .demo-content details { margin-top: 10px; }
+  .demo-content summary { padding: 4px 0; }
+  .demo-content pre { font-size: 12px; line-height: 1.35; padding: 8px; margin: 8px 0; }
+  .demo-content button, .demo-content select { min-height: 38px; }
+  .demo-content button { padding: 6px 10px; }
+  .demo-content select { padding-top: 6px; padding-bottom: 6px; margin-bottom: 8px; }
+  .demo-content .session-list { margin: 8px 0; }
+  .demo-content .session-list li { padding: 4px 0; }
+  .demo-content .steps { padding: 4px; margin-bottom: 12px; }
+  .demo-content .steps button { font-size: 12px; }
+  .demo-content .steps p { margin-bottom: 0; }
+  .demo-content .timeline-key { gap: 10px; margin: 12px 0 10px; }
+  .demo-content .axis { height: 30px; }
+  .demo-content .tick { font-size: 11px; }
+  .demo-content .timeline-row { min-height: 34px; }
+  .demo-content .track { height: 30px; }
+  .demo-content .sleep-bar { top: 6px; height: 18px; }
+  .demo-content .metrics { padding-top: 12px; margin-top: 10px; gap: 6px; }
+  .demo-content .metrics strong { font-size: 20px; }
+  .demo-content .empty-result { padding: 10px; margin-top: 12px; }
+  .demo-content .actions { margin-top: 10px; gap: 6px; }
+  .demo-content .comparison-table { margin: 10px 0; font-size: 12px; }
+  .demo-content .comparison-table th, .demo-content .comparison-table td { padding: 8px; }
+  .demo-content .diff2 { gap: 10px; margin-top: 10px; }
+  .demo-content .diff2 pre { margin: 0; }
+  .demo-content .experiment-panel { margin-top: 10px; padding: 10px; }
+  .demo-content .experiment-panel .micro { margin-bottom: 0; }
+  #stage-compare > .traditional-test { padding-top: 10px; margin-top: 10px; }
+  #comparison-details { margin-top: 10px; }
+}
