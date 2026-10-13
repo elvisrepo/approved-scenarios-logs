@@ -67,10 +67,7 @@ export async function initLogs(highlight) {
     if (!target.matches('button, [tabindex]')) target.tabIndex = -1;
     target.focus({ preventScroll: true });
     updateWidth();
-    if (id === 'logs-experiment') {
-      const padding = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 88;
-      window.scrollTo({ top: Math.max(0, context.getBoundingClientRect().top + scrollY - padding, target.getBoundingClientRect().bottom + scrollY - innerHeight + 24) });
-    } else context.scrollIntoView({ block: 'start' });
+    context.scrollIntoView({ block: 'start' });
   }
 
   function eventTone(event, index) {
@@ -111,16 +108,13 @@ export async function initLogs(highlight) {
     }
   }
   function updateRecording() {
-    $('logs-recording-badge').textContent = humanApproved ? 'Reviewed browser copy' : selectedRecording.id === 'exact-duplicate' ? 'Approved log' : 'Demo recording';
-    $('logs-recording-source').textContent = humanApproved ? 'Expected recording saved from your reviewed correction. The original captured bug is preserved above.' : selectedRecording.id === 'exact-duplicate' ? 'logs/exact-duplicate.approved.log' : `Demo recording based on ${selectedRecording.source}. Expected events come from the approved result.`;
-    $('logs-recorded-raw').textContent = workingText;
-    $('logs-recorded-events').innerHTML = eventCards(workingText);
+    $('logs-recording-badge').textContent = bugEvidence ? 'Captured bug · simulated' : 'Not captured yet';
+    $('logs-recording-source').textContent = bugEvidence ? 'Original faulty-run evidence. Review and correct creates a separate expected recording; this capture stays intact.' : 'Capture a buggy run to record its invocation and emitted events.';
+    $('logs-recorded-raw').textContent = bugEvidence ?? 'No buggy run captured yet.';
+    $('logs-recorded-events').innerHTML = bugEvidence ? eventCards(bugEvidence) : '<p class="empty-result">Capture a buggy run to inspect its recorded events.</p>';
+    $('logs-replay').disabled = !bugEvidence;
     $('logs-expected').textContent = workingText;
-    $('logs-expected-label').textContent = mode !== 'missing-invocation' ? humanApproved ? 'Expected · human-approved browser recording' : selectedRecording.id === 'exact-duplicate' ? 'Expected · approved log' : 'Expected · scenario-derived recording' : 'Expected · missing invocation (browser copy)';
-    $('logs-restore').hidden = mode === 'approved';
-    $('logs-restore').textContent = mode === 'missing-invocation' ? 'Restore recording' : 'Restore correct replay';
-    $('logs-wrong-total').disabled = mode === 'buggy-replay';
-    $('logs-remove-invocation').disabled = mode === 'missing-invocation';
+    $('logs-expected-label').textContent = humanApproved ? 'Expected · human-approved browser recording' : selectedRecording.id === 'exact-duplicate' ? 'Expected · approved log' : 'Expected · scenario-derived recording';
     updateTraditionalTest();
   }
   function updateReview() {
@@ -134,7 +128,6 @@ export async function initLogs(highlight) {
       events.at(-1).totalMinutes = total;
       reviewedText = renderLog(events.map(event => JSON.stringify(event)));
     }
-    $('logs-review-preview').innerHTML = reviewedText ? reviewedText.trimEnd().split('\n').map((line, i) => valid && total !== capturedTotal && i === events.length - 1 ? `<span class="hl-expected">${esc(line)}</span>` : esc(line)).join('\n') + '\n' : 'Enter a non-negative whole number of minutes.';
     $('logs-approve-recording').disabled = !valid || total === capturedTotal || humanApproved;
     $('logs-review-message').textContent = !valid ? 'Enter a non-negative whole number before approving.' : total === capturedTotal ? `The captured run reports ${capturedTotal} minutes. Correct the expected total before approving; copying the bug would preserve it.` : `The expected total is now ${total} minutes; the original captured evidence remains ${capturedTotal}. Review this correction before approving.`;
   }
@@ -148,7 +141,8 @@ export async function initLogs(highlight) {
     summary.totalMinutes *= 2;
     lines[lines.length - 1] = JSON.stringify(summary);
     bugEvidence = renderLog(lines);
-    $('logs-bug-evidence').innerHTML = lines.map((line, i) => i === lines.length - 1 ? `<span class="hl-actual">${esc(line)}</span>` : esc(line)).join('\n') + '\n';
+    mode = 'buggy-replay';
+    updateRecording();
     $('logs-reviewed-total').value = String(summary.totalMinutes);
     $('logs-reviewed-total').disabled = false;
     $('logs-correct-total').disabled = false;
@@ -159,7 +153,7 @@ export async function initLogs(highlight) {
     $('logs-create-status').className = 'badge fail';
     updateReview();
   }
-  $('logs-capture-bug').addEventListener('click', () => { captureBug(); reveal('logs-bug-evidence', 'logs-create-stage', 'bug', 'input'); });
+  $('logs-capture-bug').addEventListener('click', () => { captureBug(); reveal('logs-recorded-raw', 'logs-recording', 'bug', 'input'); });
   $('logs-reviewed-total').addEventListener('input', updateReview);
   $('logs-correct-total').addEventListener('click', () => {
     $('logs-reviewed-total').value = String(JSON.parse(selectedRecording.lines.at(-1)).totalMinutes);
@@ -170,16 +164,18 @@ export async function initLogs(highlight) {
     if ($('logs-approve-recording').disabled) return;
     approvedText = reviewedText;
     humanApproved = true;
-    mode = 'buggy-replay'; workingText = approvedText;
+    mode = 'approved'; workingText = approvedText;
     $('logs-reviewed-total').disabled = true;
     $('logs-correct-total').disabled = true;
     $('logs-approve-recording').disabled = true;
     $('logs-download-recording').disabled = false;
-    $('logs-create-status').textContent = 'Approved in browser · replay pending';
+    $('logs-create-status').textContent = 'Approved in browser · checking correct replay';
     $('logs-create-status').className = 'badge pass';
-    $('logs-review-message').textContent = 'Corrected recording approved in browser memory. Replaying its input still exposes the simulated implementation bug.';
-    updateRecording(); compare();
-    reveal('logs-comparison-full', 'logs-compare-stage', 'compare', 'compare');
+    updateRecording();
+    const matches = compare();
+    $('logs-review-message').textContent = matches ? 'Expected recording approved in browser memory. Correct replay now matches it; the original captured bug remains intact.' : 'Expected recording approved in browser memory. Correct replay still differs from your expectation; review the highlighted mismatch.';
+    $('logs-runner-message').textContent = matches ? 'Reviewed expectation saved and simulated bug corrected. The replay passes.' : 'Reviewed expectation saved. The real replay still differs; inspect the comparison.';
+    reveal('logs-comparison-full', 'logs-compare-stage', matches ? 'pass' : 'compare', 'compare');
   });
   $('logs-download-recording').addEventListener('click', () => {
     if (!humanApproved) return;
@@ -219,7 +215,6 @@ export async function initLogs(highlight) {
       $('logs-comparison-status').className = 'badge fail';
       $('logs-actual').textContent = 'No replay was executed. The log must begin with merge_requested and its input sessions.';
       $('logs-comparison-message').textContent = 'Replay rejected before execution. The remaining events describe output but do not supply the input needed to reproduce it.';
-      $('logs-lesson-message').textContent = 'The invocation was removed. No function ran and no events were captured. Restore the recording to make this recording replayable again.';
       return undefined;
     }
   }
@@ -260,8 +255,13 @@ export async function initLogs(highlight) {
     const matches = expected === capturedText;
     const left = expected.trimEnd().split('\n');
     const right = capturedText.trimEnd().split('\n');
+    const evidence = bugEvidence?.trimEnd().split('\n');
     const count = Math.max(left.length, right.length);
-    const pane = (lines, className) => Array.from({ length: count }, (_, i) => left[i] === right[i] ? esc(lines[i] ?? '') : `<span class="${className}">${esc(lines[i] ?? '')}</span>`).join('\n');
+    const pane = (lines, className) => Array.from({ length: count }, (_, i) => {
+      if (left[i] !== right[i]) return `<span class="${className}">${esc(lines[i] ?? '')}</span>`;
+      if (humanApproved && evidence && evidence[i] !== left[i]) return `<span class="hl-corrected">${esc(lines[i] ?? '')}</span>`;
+      return esc(lines[i] ?? '');
+    }).join('\n');
     $('logs-expected').innerHTML = pane(left, 'hl-expected');
     $('logs-actual').innerHTML = pane(right, 'hl-actual');
     $('logs-comparison-status').textContent = matches ? '✓ PASS · all events match' : '✗ FAIL · recording differs';
@@ -273,36 +273,29 @@ export async function initLogs(highlight) {
     const actualTotal = JSON.parse(capturedLines.at(-1)).totalMinutes;
     const expectedTotal = JSON.parse(left.at(-1)).totalMinutes;
     $('logs-comparison-message').textContent = matches ? 'Every event and its position matches the selected recording.' : `The expected recording stays at ${expectedTotal} minutes. ${mode === 'buggy-replay' ? 'The simulated buggy replay' : 'The replay'} returns ${actualTotal}; the full-log comparison catches the difference.`;
-    $('logs-lesson-message').textContent = matches ? 'The recording passes. Simulate a buggy replay to see a regression, or remove its invocation to see replay rejected.' : mode === 'buggy-replay' ? `The expected total remains ${expectedTotal} minutes. A simulated bug doubles the actual total to ${actualTotal}. Restore correct replay to rerun the real function and pass again.` : 'The actual replay differs from the expected recording. Investigate the implementation while keeping the reviewed expectation fixed.';
     updateTraditionalTest();
     return matches;
   }
-  function showExperiment() {
-    reveal('logs-experiment', 'logs-compare-stage', 'decide', 'review');
-  }
   function runNode(id) {
     if (!approvedText) { $('logs-runner-message').textContent = 'Wait for the recording to load.'; return; }
+    if (!bugEvidence) captureBug();
     const actions = {
-      bug: () => { if (!bugEvidence) captureBug(); reveal('logs-bug-evidence', 'logs-create-stage', id, 'input'); },
-      approve: () => { if (!bugEvidence) captureBug(); reveal(humanApproved ? 'logs-review-preview' : 'logs-reviewed-total', 'logs-create-stage', id, 'input'); },
-      fixture: () => reveal('logs-recorded-raw', 'logs-recording', id, 'input'),
+      bug: () => reveal('logs-recorded-raw', 'logs-recording', id, 'input'),
+      approve: () => { if (!bugEvidence) captureBug(); compare(); reveal(humanApproved ? 'logs-review-message' : 'logs-reviewed-total', 'logs-review-stage', id, 'review'); },
       parse: () => { readInvocation(); reveal('logs-input', 'logs-invocation-details', id, 'input'); },
       execute: () => { if (replay()) reveal('logs-replayed-events', 'logs-replay-stage', id, 'run'); else reveal('logs-input', 'logs-invocation-details', 'parse', 'input'); },
       render: () => { if (capture()) reveal('logs-actual', 'logs-compare-stage', id, 'compare'); else reveal('logs-input', 'logs-invocation-details', 'parse', 'input'); },
       compare: () => { compare(); reveal('logs-comparison-full', 'logs-compare-stage', id, 'compare'); },
-      pass: () => { if (compare() === true) reveal('logs-comparison-status', 'logs-compare-stage', id, 'compare'); else showExperiment(); },
-      decide: () => { compare(); showExperiment(); },
+      pass: () => { if (compare() === true) reveal('logs-comparison-status', 'logs-compare-stage', id, 'compare'); else runNode('approve'); },
     };
     $('logs-runner-message').textContent = {
       bug: 'Capture a faulty run as evidence. It is not yet an approved expectation.',
       approve: 'Correct the expected outcome, then explicitly approve the recording to create a regression test.',
-      fixture: 'The selected recording contains the invocation and expected events.',
       parse: 'Read the first event to recover the input needed for replay.',
       execute: 'Replay the recorded request through the real logMerge function.',
       render: 'Rebuild the log from newly captured events.',
       compare: 'Compare every JSON line in its recorded order.',
       pass: 'Verify the replay against the selected recording.',
-      decide: 'Explore a buggy replay or missing input, then restore it.',
     }[id];
     actions[id]?.();
   }
@@ -314,27 +307,15 @@ export async function initLogs(highlight) {
     const node = event.target.closest('[data-log-node]');
     if (node && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); runNode(node.dataset.logNode); }
   });
-  document.querySelectorAll('[data-log-step]').forEach((button) => button.addEventListener('click', () => runNode({ input: 'fixture', run: 'execute', compare: 'compare', review: 'decide' }[button.dataset.logStep])));
+  document.querySelectorAll('[data-log-step]').forEach((button) => button.addEventListener('click', () => runNode({ input: 'bug', run: 'execute', compare: 'compare', review: 'approve' }[button.dataset.logStep])));
   $('logs-clear-highlight').addEventListener('click', () => { clearHighlights(); selectNode(null, 'input'); $('logs-runner-message').textContent = 'Choose a step to explore the recording and its replay.'; });
   $('logs-replay').addEventListener('click', () => { compare(); reveal('logs-comparison-full', 'logs-compare-stage', 'compare', 'compare'); });
-  $('logs-wrong-total').addEventListener('click', () => {
-    mode = 'buggy-replay';
-    workingText = approvedText;
-    updateRecording(); compare(); showExperiment();
-  });
-  $('logs-remove-invocation').addEventListener('click', () => {
-    mode = 'missing-invocation';
-    workingText = renderLog(approvedText.trimEnd().split('\n').slice(1));
-    updateRecording(); compare(); showExperiment();
-  });
-  $('logs-restore').addEventListener('click', () => { mode = 'approved'; workingText = approvedText; updateRecording(); compare(); showExperiment(); });
   function reset() {
     mode = 'approved'; workingText = approvedText;
     clearReplay(); updateRecording(); clearHighlights(); selectNode(null, 'input');
     $('logs-input').textContent = 'Choose Read invocation to inspect the replay input.';
     $('logs-parse-status').textContent = 'Not read yet'; $('logs-parse-status').className = 'badge subtle';
     $('logs-comparison-message').textContent = 'Replay the invocation, capture its events, and compare the complete log.';
-    $('logs-lesson-message').textContent = 'Simulate a buggy replay while keeping the expected recording fixed, or remove the invocation to see why replay needs its input.';
     $('logs-runner-message').textContent = 'A reviewed recording becomes a replayable regression test.';
   }
   function chooseRecording(id) {
@@ -357,7 +338,7 @@ export async function initLogs(highlight) {
     $('logs-reset').focus({ preventScroll: true }); $('logs-recording').scrollIntoView({ block: 'start' });
   });
   try {
-    const [response, catalog] = await Promise.all([fetch('../logs/exact-duplicate.approved.log'), fetch('./log-recordings.json?v=logs-capture-review-2')]);
+    const [response, catalog] = await Promise.all([fetch('../logs/exact-duplicate.approved.log'), fetch('./log-recordings.json?v=logs-corrected-highlight-1')]);
     if (!response.ok || !catalog.ok) throw new Error('Could not load the log recordings.');
     recordings = await catalog.json();
     recordings.find((recording) => recording.id === 'exact-duplicate').lines = normalizeLog(await response.text()).trimEnd().split('\n');
@@ -365,7 +346,7 @@ export async function initLogs(highlight) {
     $('logs-scenario').innerHTML = recordings.map((recording) => `<option value="${esc(recording.id)}">${esc(recording.name)}</option>`).join('');
     chooseRecording('chain-of-three');
     $('logs-scenario').disabled = false;
-    $('logs-replay').disabled = false; $('logs-reset').disabled = false;
+    $('logs-reset').disabled = false;
     $('logs-capture-bug').disabled = false;
   } catch (error) {
     $('logs-load-error').hidden = false;
