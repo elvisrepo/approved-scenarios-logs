@@ -70,7 +70,12 @@ export async function initLogs(highlight) {
     } else context.scrollIntoView({ block: 'start' });
   }
 
-  function eventCards(text) {
+  function eventTone(event, index) {
+    if (event.event === 'merge_requested') return 'request';
+    if (event.event === 'merge_completed') return 'summary';
+    return index % 2 === 1 ? 'merge-purple' : 'merge-amber';
+  }
+  function eventCards(text, matchedColors = false) {
     return normalizeLog(text).trimEnd().split('\n').map((line, index) => {
       const event = JSON.parse(line);
       let title, detail;
@@ -84,7 +89,8 @@ export async function initLogs(highlight) {
         title = 'Merge completed';
         detail = `<p><strong>${esc(event.totalMinutes)} minutes</strong> · ${esc(event.overlapsMerged)} overlap${event.overlapsMerged === 1 ? '' : 's'} merged</p>`;
       }
-      return `<article class="event-card"><div class="event-heading"><span class="event-number">${index + 1}</span><h3>${title}</h3><code>${esc(event.event)}</code></div>${detail}</article>`;
+      const tone = matchedColors ? ` data-event-tone="${eventTone(event, index)}" data-event-index="${index}"` : '';
+      return `<article class="event-card"${tone}><div class="event-heading"><span class="event-number">${index + 1}</span><h3>${title}</h3><code>${esc(event.event)}</code></div>${detail}</article>`;
     }).join('');
   }
   function updateTraditionalTest() {
@@ -149,8 +155,8 @@ export async function initLogs(highlight) {
     const invocation = readInvocation();
     if (!invocation) return false;
     capturedLines = logMerge(invocation.sessions);
-    $('logs-replayed-events').innerHTML = eventCards(renderLog(capturedLines));
-    $('logs-captured-raw').textContent = renderLog(capturedLines);
+    $('logs-replayed-events').innerHTML = eventCards(renderLog(capturedLines), true);
+    $('logs-captured-raw').innerHTML = capturedLines.map((line, index) => `<span class="event-json-line" data-event-tone="${eventTone(JSON.parse(line), index)}" data-event-index="${index}">${esc(line)}</span>`).join('\n') + '\n';
     $('logs-capture-status').textContent = `${capturedLines.length} events captured`;
     $('logs-capture-status').className = 'badge pass';
     $('logs-comparison-status').textContent = 'Not compared yet';
@@ -261,7 +267,7 @@ export async function initLogs(highlight) {
     $('logs-reset').focus({ preventScroll: true }); $('logs-recording').scrollIntoView({ block: 'start' });
   });
   try {
-    const [response, catalog] = await Promise.all([fetch('../logs/exact-duplicate.approved.log'), fetch('./log-recordings.json?v=logs-scenarios-2')]);
+    const [response, catalog] = await Promise.all([fetch('../logs/exact-duplicate.approved.log'), fetch('./log-recordings.json?v=logs-event-colors-1')]);
     if (!response.ok || !catalog.ok) throw new Error('Could not load the log recordings.');
     recordings = await catalog.json();
     recordings.find((recording) => recording.id === 'exact-duplicate').lines = normalizeLog(await response.text()).trimEnd().split('\n');

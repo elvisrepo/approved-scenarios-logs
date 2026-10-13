@@ -297,4 +297,12 @@ html:has(#tab-logs:not([hidden])) { scroll-padding-top: calc(var(--logs-runner-o
 .event-number { background: #dfeee9; color: var(--accent); border-radius: 50%; display: grid; place-items: center; width: 22px; height: 22px; font-weight: 700; flex: none; }
 .event-card p, .event-card .session-list { margin: 0; }
 .event-card .session-list li { padding: 5px 0; }
+#logs-replay-stage [data-event-tone="request"] { --event-bg: #edf5ff; --event-color: #4776ba; }
+#logs-replay-stage [data-event-tone="merge-purple"] { --event-bg: #f3effb; --event-color: #8663b5; }
+#logs-replay-stage [data-event-tone="merge-amber"] { --event-bg: #fff5e8; --event-color: #ac762a; }
+#logs-replay-stage [data-event-tone="summary"] { --event-bg: #eaf7f1; --event-color: #25816a; }
+#logs-replay-stage [data-event-tone] { background: var(--event-bg); border-left: 4px solid var(--event-color); }
+#logs-replay-stage .event-number { background: var(--event-color); color: white; }
+#logs-captured-raw { white-space: normal; background: transparent; padding: 0; }
+.event-json-line { display: block; white-space: pre-wrap; overflow-wrap: anywhere; padding: 10px; border-radius: 8px; margin-bottom: 8px; }
 @media (max-width: 360px) { .steps [data-log-step] span { display: none; } }
