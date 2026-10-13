@@ -1,4 +1,4 @@
-import { initLogs } from './logs.js?v=logs-corrected-highlight-1';
+import { initLogs } from './logs.js?v=collapsed-traditional-tests-1';
 import { mergeSleep } from './build/mergeSleep.js';
 import { logMerge } from './build/logMerge.js';
 import { normalizeText, parseScenario, renderScenario } from './build/fmt/tests/support/scenarioFormat.js';
@@ -306,6 +306,7 @@ function showComparison(restored = false) {
   return matches;
 }
 function selectExample() {
+  $('tab-demo').querySelectorAll('details').forEach(details => { details.open = false; });
   currentExample = byFile.get($('preset-pick').value);
   currentScenario = parseScenario(approved.get(currentExample.file));
   currentResult = undefined;
@@ -438,7 +439,7 @@ function runSweep() {
     const matches = !error && actual === normalizeText(text);
     if (matches) passed++; else failed++;
     const heading = `<span class="badge ${matches ? 'pass' : 'fail'}">${matches ? '✓ PASS' : '✗ FAIL'}</span><span class="scenario-label">${esc(example.name)}</span>`;
-    return matches ? `<div class="suite-row"><p>${heading}</p></div>` : `<details class="suite-row" open><summary>${heading}</summary><p>${esc(error ?? example.reason)}</p>${error ? '' : comparisonTable(text, actual) + fullDiff(text, actual)}</details>`;
+    return matches ? `<div class="suite-row"><p>${heading}</p></div>` : `<details class="suite-row"><summary>${heading}</summary><p>${esc(error ?? example.reason)}</p>${error ? '' : comparisonTable(text, actual) + fullDiff(text, actual)}</details>`;
   }).join('');
   $('sweep-status').textContent = `${passed} passed · ${failed} failed · ${examples.length} examples checked`;
   $('sweep-fix').disabled = suiteOverrides.size === 0;
@@ -454,7 +455,6 @@ $('playground-reset').addEventListener('click', () => {
   $('sweep-out').replaceChildren();
   $('sweep-status').textContent = 'No suite run yet.';
   $('sweep-fix').disabled = true;
-  document.querySelectorAll('#tab-demo details').forEach((details) => { details.open = true; });
   selectExample();
   focusLoop(null);
   $('runner-message').textContent = 'Playground reset. Start with the approved example.';

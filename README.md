@@ -26,7 +26,7 @@ Result: 22:00–04:00, 360 minutes, 2 overlaps merged
 
 **Logs** shows Approved Logs. Capture a simulated buggy run, recover its invocation, replay the input, capture events, and compare the complete log. In **Review and correct**, enter the expected total and explicitly approve the recording. Approval saves a browser fixture and restores correct replay to demonstrate a fix. The corrected matching lines are highlighted in both panes, and the original buggy evidence stays intact. You can download the reviewed `.approved.log`.
 
-Both views default to **A chain of three overlaps**. Runner nodes reveal and highlight their corresponding content; the left sidebar has an adjustable width. Equivalent traditional test code appears alongside the explanation of each comparison.
+Both views default to **A chain of three overlaps**. Collapsible sections start closed and close again on reset or scenario selection. Runner nodes open, reveal, and highlight their corresponding content; the left sidebar has an adjustable width. Equivalent traditional test code appears alongside the explanation of each comparison.
 
 The demo simulates implementation bugs and fixes. It does not run a coding agent or change repository files. Browser approvals last until reset or reload; downloaded fixtures do not automatically enter the repository’s test suite.
 

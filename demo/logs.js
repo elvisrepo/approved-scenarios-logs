@@ -148,7 +148,7 @@ export async function initLogs(highlight) {
     $('logs-correct-total').disabled = false;
     $('logs-download-recording').disabled = true;
     $('logs-review-details').hidden = false;
-    $('logs-review-details').open = true;
+    $('logs-review-details').open = false;
     $('logs-create-status').textContent = 'Bug captured · needs review';
     $('logs-create-status').className = 'badge fail';
     updateReview();
@@ -319,6 +319,7 @@ export async function initLogs(highlight) {
     $('logs-runner-message').textContent = 'A reviewed recording becomes a replayable regression test.';
   }
   function chooseRecording(id) {
+    $('tab-logs').querySelectorAll('details').forEach(details => { details.open = false; });
     selectedRecording = recordings.find((recording) => recording.id === id);
     approvedText = renderLog(selectedRecording.lines);
     humanApproved = false; bugEvidence = undefined; reviewedText = undefined;
@@ -334,11 +335,11 @@ export async function initLogs(highlight) {
   }
   $('logs-scenario').addEventListener('change', () => chooseRecording($('logs-scenario').value));
   $('logs-reset').addEventListener('click', () => {
-    chooseRecording('chain-of-three'); $('tab-logs').querySelectorAll('details').forEach((details) => { details.open = true; });
+    chooseRecording('chain-of-three');
     $('logs-reset').focus({ preventScroll: true }); $('logs-recording').scrollIntoView({ block: 'start' });
   });
   try {
-    const [response, catalog] = await Promise.all([fetch('../logs/exact-duplicate.approved.log'), fetch('./log-recordings.json?v=logs-corrected-highlight-1')]);
+    const [response, catalog] = await Promise.all([fetch('../logs/exact-duplicate.approved.log'), fetch('./log-recordings.json?v=collapsed-traditional-tests-1')]);
     if (!response.ok || !catalog.ok) throw new Error('Could not load the log recordings.');
     recordings = await catalog.json();
     recordings.find((recording) => recording.id === 'exact-duplicate').lines = normalizeLog(await response.text()).trimEnd().split('\n');

@@ -6,7 +6,7 @@
   <title>Sleep Merger — see the overlap</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23172638'/%3E%3Cpath d='M22 6a11 11 0 1 0 4 18A10 10 0 0 1 22 6' fill='%23a9e6d8'/%3E%3C/svg%3E" />
   <meta name="theme-color" content="#172638" />
-  <link rel="stylesheet" href="./styles.css?v=logs-corrected-highlight-1" />
+  <link rel="stylesheet" href="./styles.css?v=collapsed-traditional-tests-1" />
 </head>
 <body>
   <header class="site-header">
@@ -99,8 +99,8 @@
         <ul id="list" class="session-list" aria-label="Input sleep records"></ul>
         <button id="merge" class="primary wide" disabled>Run example <span aria-hidden="true">→</span></button>
         <p class="micro">Runs the same pure function as the tests.</p>
-        <details open><summary>View approved Markdown</summary><pre id="demo-file">Loading…</pre></details>
-        <details id="parsed-details" open><summary>Inspect parsed input <span id="parse-status" class="badge subtle" role="status">Not validated yet</span></summary><p class="micro">Validation checks the file format. Comparison checks whether the expected outputs match.</p><pre id="parsed-input">Choose Parse and validate to inspect the input.</pre></details>
+        <details><summary>View approved Markdown</summary><pre id="demo-file">Loading…</pre></details>
+        <details id="parsed-details"><summary>Inspect parsed input <span id="parse-status" class="badge subtle" role="status">Not validated yet</span></summary><p class="micro">Validation checks the file format. Comparison checks whether the expected outputs match.</p><pre id="parsed-input">Choose Parse and validate to inspect the input.</pre></details>
       </section>
       <section class="card timeline-card" id="stage-run" aria-labelledby="timeline-title">
         <div class="card-heading"><div><p class="eyebrow">02 / Run</p><h2 id="timeline-title">One shared timeline</h2></div><span class="badge subtle">UTC</span></div>
@@ -116,13 +116,13 @@
             <div><strong id="overlaps">—</strong><span id="overlap-label">overlaps merged</span></div>
           </div>
         </div>
-        <details open><summary>Inspect result and logs</summary><h3>Result JSON</h3><pre id="result">Run the example to see the result.</pre><h3>Captured JSON events</h3><pre id="logs">Run the example to capture the log events.</pre></details>
+        <details><summary>Inspect result and logs</summary><h3>Result JSON</h3><pre id="result">Run the example to see the result.</pre><h3>Captured JSON events</h3><pre id="logs">Run the example to capture the log events.</pre></details>
       </section>
     </div>
     <section class="card" id="stage-compare" aria-labelledby="compare-title">
       <div class="card-heading"><div><p class="eyebrow">03 / Compare</p><h2 id="compare-title">Expected vs actual</h2></div><span id="comparison-status" class="badge" role="status">Not rendered yet</span></div>
       <p id="comparison-message" class="muted" aria-live="polite">The approved expectation is ready. Render the actual output to view both files side by side.</p>
-      <details id="comparison-details" open>
+      <details id="comparison-details">
         <summary>Expected and actual Markdown</summary>
         <div id="comparison-full" class="diff2">
           <div><h3>Expected · approved file</h3><pre id="expected-markdown">Loading the example…</pre></div>
@@ -138,9 +138,10 @@
       <p class="micro">This experiment simulates a bug in actual output. The approved expectation and real implementation stay unchanged.</p>
       </section>
       <section class="traditional-test" aria-labelledby="traditional-test-title">
-        <div class="card-heading"><h3 id="traditional-test-title">Equivalent traditional test</h3><span class="badge subtle">Vitest</span></div>
+        <details id="traditional-test-details"><summary id="traditional-test-title">Equivalent traditional test <span class="badge subtle">Vitest</span></summary>
         <p id="traditional-test-note" class="micro">The same input and expectations, expressed as assertions.</p>
         <pre class="code" id="traditional-test-code" tabindex="0" aria-label="Traditional test code for the selected example">Loading the example…</pre>
+        </details>
       </section>
     </section>
     <section class="card" id="sweep" aria-labelledby="sweep-title">
@@ -238,27 +239,27 @@
           <div id="logs-recorded-events" class="event-list" aria-label="Events in the captured buggy log">Loading the approved recording…</div>
           <button id="logs-replay" class="primary wide" disabled>Replay recorded run <span aria-hidden="true">→</span></button>
           <p class="micro">The first event carries the sessions needed to reproduce the run.</p>
-          <details open><summary>Inspect captured bug JSON lines</summary><pre id="logs-recorded-raw">Loading…</pre></details>
-          <details id="logs-invocation-details" open><summary>Inspect replay input <span id="logs-parse-status" class="badge subtle" role="status">Not read yet</span></summary><pre id="logs-input">Choose Read invocation to inspect the replay input.</pre></details>
+          <details><summary>Inspect captured bug JSON lines</summary><pre id="logs-recorded-raw">Loading…</pre></details>
+          <details id="logs-invocation-details"><summary>Inspect replay input <span id="logs-parse-status" class="badge subtle" role="status">Not read yet</span></summary><pre id="logs-input">Choose Read invocation to inspect the replay input.</pre></details>
         </section>
         <section id="logs-replay-stage" class="card" aria-labelledby="logs-replay-title">
           <div class="card-heading"><div><p class="eyebrow">02 / Replay</p><h2 id="logs-replay-title">Replay and capture events</h2></div><span id="logs-capture-status" class="badge subtle" role="status">Not replayed yet</span></div>
           <p class="muted">The real logMerge function runs the recorded request and returns a new sequence of events.</p>
           <div id="logs-replayed-events" class="event-list" aria-label="Events captured during replay"><p class="empty-result">Replay the recording to capture its events.</p></div>
-          <details open><summary>Inspect captured JSON events</summary><pre id="logs-captured-raw">No events captured yet.</pre></details>
+          <details><summary>Inspect captured JSON events</summary><pre id="logs-captured-raw">No events captured yet.</pre></details>
         </section>
       </div>
       <section id="logs-compare-stage" class="card" aria-labelledby="logs-compare-title">
         <div class="card-heading"><div><p class="eyebrow">03 / Compare</p><h2 id="logs-compare-title">Approved vs replayed log</h2></div><span id="logs-comparison-status" class="badge subtle" role="status">Not replayed yet</span></div>
         <p id="logs-comparison-message" class="muted" aria-live="polite">Replay the invocation, capture its events, and compare the complete log.</p>
-        <details id="logs-comparison-details" open><summary>Approved and replayed JSON lines</summary>
+        <details id="logs-comparison-details"><summary>Approved and replayed JSON lines</summary>
           <div id="logs-comparison-full" class="diff2"><div><h3 id="logs-expected-label">Expected · approved log</h3><pre id="logs-expected">Loading…</pre></div><div><h3 id="logs-actual-label">Actual · replayed events</h3><pre id="logs-actual">Capture the replayed events to rebuild the actual log.</pre></div></div>
         </details>
         <p class="micro">The comparison checks every line and event order. Only line endings and trailing whitespace are normalized.</p>
         <section id="logs-review-stage" class="experiment-panel" aria-labelledby="logs-review-title">
           <div class="card-heading"><div><p class="eyebrow">04 / Review and correct</p><h2 id="logs-review-title">Review the bug and approve expected behavior</h2></div></div>
           <p class="micro">After comparing the replay, correct the captured outcome and explicitly approve the expected recording.</p>
-        <details id="logs-review-details" open hidden><summary>Correct and approve expected behavior</summary>
+        <details id="logs-review-details" hidden><summary>Correct and approve expected behavior</summary>
           <div class="actions"><label for="logs-reviewed-total">Expected minutes asleep<input id="logs-reviewed-total" type="number" min="0" step="1" required /></label><button id="logs-correct-total">Use scenario’s correct total</button></div>
           <p id="logs-review-message" class="micro" aria-live="polite"></p>
           <div class="actions"><button id="logs-approve-recording" class="primary" disabled>Approve expected recording</button><button id="logs-download-recording" disabled>Download approved .log</button></div>
@@ -267,10 +268,11 @@
         </section>
 
         <section class="traditional-test" aria-labelledby="logs-test-title">
-          <div class="card-heading"><h3 id="logs-test-title">Equivalent traditional test</h3><span class="badge subtle">Vitest</span></div>
+          <details id="logs-test-details"><summary id="logs-test-title">Equivalent traditional test <span class="badge subtle">Vitest</span></summary>
           <p id="logs-test-note" class="micro">The recorded input and approved event sequence, expressed as assertions.</p>
           <pre id="logs-test-code" class="code" tabindex="0" aria-label="Traditional test code for the approved log">Loading…</pre>
-        </section>
+          </details>
+      </section>
       </section>
     </div>
   </section>
@@ -292,6 +294,6 @@
 
   <footer>Sleep Merger <span>Approved examples · Pure functions · Human review</span></footer>
   </main>
-  <script type="module" src="./demo.js?v=logs-corrected-highlight-1"></script>
+  <script type="module" src="./demo.js?v=collapsed-traditional-tests-1"></script>
 </body>
 </html>
