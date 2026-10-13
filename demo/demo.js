@@ -1,4 +1,4 @@
-import { initLogs } from './logs.js?v=logs-event-colors-1';
+import { initLogs } from './logs.js?v=actual-bug-simulation-2';
 import { mergeSleep } from './build/mergeSleep.js';
 import { logMerge } from './build/logMerge.js';
 import { normalizeText, parseScenario, renderScenario } from './build/fmt/tests/support/scenarioFormat.js';
@@ -155,7 +155,7 @@ document.querySelectorAll('[data-step]').forEach((button) => button.addEventList
 let currentExample = byFile.get(defaultExampleFile);
 let currentScenario;
 let currentResult;
-let expectationBroken = false;
+let buggyResult = false;
 function rangeText(session) {
   const overnight = session.start.slice(0, 10) !== session.end.slice(0, 10);
   return `${clock(session.start)}–${clock(session.end)}${overnight ? ' (+1 day)' : ''}`;
@@ -190,7 +190,7 @@ function fullDiff(expected, actual) {
   const right = normalizeText(actual).split('\n');
   const count = Math.max(left.length, right.length);
   const pane = (lines, className) => Array.from({ length: count }, (_, i) => left[i] === right[i] ? esc(lines[i] ?? '') : `<span class="${className}">${esc(lines[i] ?? '')}</span>`).join('\n');
-  return `<div class="diff2"><div><h3>Expected · browser copy</h3><pre>${pane(left, 'hl-del')}</pre></div><div><h3>Actual · function output</h3><pre>${pane(right, 'hl-add')}</pre></div></div>`;
+  return `<div class="diff2"><div><h3>Expected · approved file</h3><pre>${pane(left, 'hl-expected')}</pre></div><div><h3>Actual · simulated buggy result</h3><pre>${pane(right, 'hl-actual')}</pre></div></div>`;
 }
 const outputFields = [['sessions', 'Sleep blocks'], ['total_minutes', 'Minutes asleep'], ['overlaps_merged', 'Overlaps merged']];
 function fieldValue(text, key) { return text.split('\n').find((line) => line.startsWith(`${key}: `))?.slice(key.length + 2) ?? 'Missing expectation'; }
@@ -218,13 +218,21 @@ function traditionalTest(scenario, expected) {
 }
 function showTraditionalTest(expected) {
   $('traditional-test-code').innerHTML = highlight(traditionalTest(currentScenario, expected));
-  $('traditional-test-note').textContent = expectationBroken
-    ? 'These assertions now contain the same incorrect expectation shown in the comparison.'
+  $('traditional-test-note').textContent = buggyResult
+    ? 'The approved assertions stay correct. The mistake is simulated in demo output; the real mergeSleep implementation is unchanged.'
     : 'The same input and approved expectations, expressed as assertions.';
+}
+function simulateResult(scenario, result, file) {
+  const incorrect = breakText(renderScenario(scenario, result), file);
+  const ranges = fieldValue(incorrect, 'sessions');
+  const sessions = ranges === 'none' ? [] : parseScenario(
+    `# Simulated blocks\n\n## Input\n${ranges.split(', ').map(range => `simulated ${range}`).join('\n')}\n\n## Result\nsessions: none\ntotal_minutes: 0\noverlaps_merged: 0\n`,
+  ).sessions.map(({ start, end }) => ({ start, end }));
+  return { sessions, totalMinutes: Number(fieldValue(incorrect, 'total_minutes')), overlapsMerged: Number(fieldValue(incorrect, 'overlaps_merged')) };
 }
 function selectedExpectation() {
   const original = approved.get(currentExample.file);
-  return expectationBroken ? breakText(original, currentExample.file) : original;
+  return original;
 }
 function validateExample() {
   if (!currentScenario) return false;
@@ -245,7 +253,8 @@ function displayMarkdown(actual, compared = false) {
   const expected = selectedExpectation();
   const expectedPane = $('expected-markdown');
   const actualPane = $('rendered-actual');
-  expectedPane.previousElementSibling.textContent = expectationBroken ? 'Expected · modified browser copy' : 'Expected · approved file';
+  expectedPane.previousElementSibling.textContent = 'Expected · approved file';
+  actualPane.previousElementSibling.textContent = buggyResult ? 'Actual · simulated buggy result' : 'Actual · function output';
   if (!compared) {
     expectedPane.textContent = normalizeText(expected);
     actualPane.textContent = actual;
@@ -255,8 +264,8 @@ function displayMarkdown(actual, compared = false) {
   const right = normalizeText(actual).split('\n');
   const count = Math.max(left.length, right.length);
   const pane = (lines, className) => Array.from({ length: count }, (_, i) => left[i] === right[i] ? esc(lines[i] ?? '') : `<span class="${className}">${esc(lines[i] ?? '')}</span>`).join('\n');
-  expectedPane.innerHTML = pane(left, 'hl-del');
-  actualPane.innerHTML = pane(right, 'hl-add');
+  expectedPane.innerHTML = pane(left, 'hl-expected');
+  actualPane.innerHTML = pane(right, 'hl-actual');
 }
 function resetComparison(message, actualPlaceholder) {
   displayMarkdown(actualPlaceholder);
@@ -268,8 +277,8 @@ function resetComparison(message, actualPlaceholder) {
   $('comparison-status').className = 'badge subtle';
   $('comparison-message').textContent = message;
   $('try-mistake').disabled = true;
-  $('restore-expectation').hidden = !expectationBroken;
-  $('lesson-message').textContent = 'Compare the example first, then try an incorrect expectation to see the test fail.';
+  $('restore-expectation').hidden = !buggyResult;
+  $('lesson-message').textContent = 'Compare the example first, then simulate a buggy result to see the test fail.';
 }
 function renderActual() {
   if (!currentResult && !executeExample()) return undefined;
@@ -282,9 +291,9 @@ function showComparison(restored = false) {
   if (actual === undefined) return undefined;
   const expected = selectedExpectation();
   const matches = normalizeText(expected) === actual;
-  $('comparison-status').textContent = matches ? '✓ PASS · all outputs match' : '✗ FAIL · expectation differs';
+  $('comparison-status').textContent = matches ? '✓ PASS · all outputs match' : '✗ FAIL · actual differs';
   $('comparison-status').className = `badge ${matches ? 'pass' : 'fail'}`;
-  $('lesson-message').textContent = matches ? (restored ? `The correct expectation passes again. ${currentExample.reason}` : 'The complete rendered file matches the approved example. Now try an incorrect expectation and watch the test catch it.') : `The test caught the mistake. ${currentExample.reason}`;
+  $('lesson-message').textContent = matches ? (restored ? `The correct result passes again. ${currentExample.reason}` : 'The complete rendered file matches the approved example. Now simulate a buggy result and watch the test catch it.') : `The test caught the mistake. ${currentExample.reason}`;
   $('comparison').hidden = false;
   $('comparison-empty').hidden = true;
   $('comparison').innerHTML = comparisonTable(expected, actual);
@@ -292,15 +301,15 @@ function showComparison(restored = false) {
   displayMarkdown(actual, true);
   $('comparison-message').textContent = matches ? 'Every line of the expected and actual files matches.' : 'The files differ. Highlighted lines show the mismatches.';
   $('try-mistake').disabled = !matches;
-  $('restore-expectation').hidden = !expectationBroken;
-  setStep(expectationBroken || restored ? 'review' : 'compare');
+  $('restore-expectation').hidden = !buggyResult;
+  setStep(buggyResult || restored ? 'review' : 'compare');
   return matches;
 }
 function selectExample() {
   currentExample = byFile.get($('preset-pick').value);
   currentScenario = parseScenario(approved.get(currentExample.file));
   currentResult = undefined;
-  expectationBroken = false;
+  buggyResult = false;
   $('demo-file').textContent = approved.get(currentExample.file);
   $('scenario-description').textContent = currentExample.description;
   $('list').innerHTML = currentScenario.sessions.map((session, i) => `<li><span class="source-name"><i class="source-dot" style="--source:${colors[i % colors.length]}" aria-hidden="true"></i>${esc(session.source)}</span><span class="session-time">${esc(rangeText(session))}</span></li>`).join('');
@@ -324,13 +333,14 @@ function selectExample() {
 function executeExample() {
   if (!validateExample()) return false;
   currentResult = mergeSleep(currentScenario.sessions);
+  if (buggyResult) currentResult = simulateResult(currentScenario, currentResult, currentExample.file);
   $('total').textContent = duration(currentResult.totalMinutes);
   $('session-count').textContent = currentResult.sessions.length;
   $('session-label').textContent = currentResult.sessions.length === 1 ? 'merged session' : 'merged sessions';
   $('overlaps').textContent = currentResult.overlapsMerged;
   $('overlap-label').textContent = currentResult.overlapsMerged === 1 ? 'overlap merged' : 'overlaps merged';
   $('result').textContent = JSON.stringify(currentResult, null, 2);
-  $('logs').textContent = logMerge(currentScenario.sessions).join('\n');
+  $('logs').textContent = buggyResult ? [JSON.stringify({ event: 'merge_requested', sessions: currentScenario.sessions }), ...currentResult.sessions.map(session => JSON.stringify({ event: 'session_merged', ...session })), JSON.stringify({ event: 'merge_completed', totalMinutes: currentResult.totalMinutes, overlapsMerged: currentResult.overlapsMerged })].join('\n') : logMerge(currentScenario.sessions).join('\n');
   $('result-empty').hidden = true;
   $('result-summary').hidden = false;
   renderTimeline();
@@ -344,12 +354,13 @@ function runExample() {
 }
 $('preset-pick').addEventListener('change', selectExample);
 $('merge').addEventListener('click', runExample);
-$('try-mistake').addEventListener('click', () => { if (!currentResult) return; expectationBroken = true; showComparison(); $('restore-expectation').focus({ preventScroll: true }); });
+$('try-mistake').addEventListener('click', () => { if (!currentResult) return; buggyResult = true; executeExample(); showComparison(); $('restore-expectation').focus({ preventScroll: true }); });
 $('restore-expectation').addEventListener('click', () => {
-  expectationBroken = false;
+  buggyResult = false;
+  executeExample();
   if (showComparison(true)) {
     setStep('compare', 'pass');
-    $('runner-message').textContent = 'Correct expectation restored. The complete file passes again.';
+    $('runner-message').textContent = 'Correct result restored. The complete file passes again.';
   }
   $('try-mistake').focus({ preventScroll: true });
 });
@@ -395,7 +406,7 @@ function runNode(id) {
     }
     case 'decide':
       if (showComparison() === undefined) break;
-      $('runner-message').textContent = 'Try an incorrect expectation or restore it, then review the comparison.';
+      $('runner-message').textContent = 'Simulate a buggy result or restore it, then review the comparison.';
       revealTarget('stage-experiment', 'review', id);
       break;
   }
@@ -419,10 +430,10 @@ function runSweep() {
   let passed = 0;
   let failed = 0;
   $('sweep-out').innerHTML = examples.map((example) => {
-    const text = suiteOverrides.get(example.file) ?? approved.get(example.file);
+    const text = approved.get(example.file);
     let actual;
     let error;
-    try { const scenario = parseScenario(text); actual = renderScenario(scenario, mergeSleep(scenario.sessions)); }
+    try { const scenario = parseScenario(text); actual = renderScenario(scenario, mergeSleep(scenario.sessions)); if (suiteOverrides.has(example.file)) actual = breakText(actual, example.file); }
     catch (caught) { error = caught.message; }
     const matches = !error && actual === normalizeText(text);
     if (matches) passed++; else failed++;
@@ -435,7 +446,7 @@ function runSweep() {
   // their own result and restoration controls, without changing that context.
 }
 $('sweep-run').addEventListener('click', runSweep);
-$('sweep-break').addEventListener('click', () => { const file = $('sweep-pick').value; suiteOverrides.set(file, breakText(approved.get(file), file)); runSweep(); });
+$('sweep-break').addEventListener('click', () => { const file = $('sweep-pick').value; suiteOverrides.set(file, true); runSweep(); });
 $('sweep-fix').addEventListener('click', () => { suiteOverrides.clear(); runSweep(); $('sweep-run').focus({ preventScroll: true }); });
 $('playground-reset').addEventListener('click', () => {
   $('preset-pick').value = defaultExampleFile;

@@ -6,7 +6,7 @@
   <title>Sleep Merger — see the overlap</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23172638'/%3E%3Cpath d='M22 6a11 11 0 1 0 4 18A10 10 0 0 1 22 6' fill='%23a9e6d8'/%3E%3C/svg%3E" />
   <meta name="theme-color" content="#172638" />
-  <link rel="stylesheet" href="./styles.css?v=logs-event-colors-1" />
+  <link rel="stylesheet" href="./styles.css?v=actual-bug-simulation-2" />
 </head>
 <body>
   <header class="site-header">
@@ -133,9 +133,9 @@
       <div id="comparison" hidden></div>
       <section class="experiment-panel" id="stage-experiment" aria-labelledby="experiment-title">
       <div class="card-heading"><div><p class="eyebrow">04 / Experiment &amp; review</p><h2 id="experiment-title">Can the test catch a mistake?</h2></div></div>
-      <p id="lesson-message" class="muted" aria-live="polite">Compare the example first, then try an incorrect expectation to see the test fail.</p>
-      <div id="expectation-actions" class="actions"><button id="try-mistake" disabled>Try an incorrect expectation</button><button id="restore-expectation" class="primary" hidden>Restore correct expectation</button></div>
-      <p class="micro">This experiment changes a copy in your browser. Approved files on disk stay untouched.</p>
+      <p id="lesson-message" class="muted" aria-live="polite">Compare the example first, then simulate a buggy result to see the test fail.</p>
+      <div id="expectation-actions" class="actions"><button id="try-mistake" disabled>Simulate a buggy result</button><button id="restore-expectation" class="primary" hidden>Restore correct result</button></div>
+      <p class="micro">This experiment simulates a bug in actual output. The approved expectation and real implementation stay unchanged.</p>
       </section>
       <section class="traditional-test" aria-labelledby="traditional-test-title">
         <div class="card-heading"><h3 id="traditional-test-title">Equivalent traditional test</h3><span class="badge subtle">Vitest</span></div>
@@ -146,7 +146,7 @@
     <section class="card" id="sweep" aria-labelledby="sweep-title">
       <div class="card-heading"><div><p class="eyebrow">Take it further</p><h2 id="sweep-title">Check every approved scenario</h2></div><span class="badge subtle">6 examples</span></div>
       <p class="muted">The runner discovers each approved file, executes it, and compares the entire result. Here you can try the same loop across all six examples.</p>
-      <div class="actions"><button id="sweep-run" class="primary" disabled>Run all examples</button><label class="inline-label" for="sweep-pick">Experiment with<select id="sweep-pick" disabled></select></label><button id="sweep-break" disabled>Try a mistake</button><button id="sweep-fix" disabled>Restore expectations</button></div>
+      <div class="actions"><button id="sweep-run" class="primary" disabled>Run all examples</button><label class="inline-label" for="sweep-pick">Experiment with<select id="sweep-pick" disabled></select></label><button id="sweep-break" disabled>Simulate a bug</button><button id="sweep-fix" disabled>Restore correct results</button></div>
       <p class="micro">Mistakes and corrections are browser-only copies.</p>
       <p id="sweep-status" role="status">No suite run yet.</p><div id="sweep-out"></div>
     </section>
@@ -260,14 +260,14 @@
         <div class="card-heading"><div><p class="eyebrow">03 / Compare</p><h2 id="logs-compare-title">Approved vs replayed log</h2></div><span id="logs-comparison-status" class="badge subtle" role="status">Not replayed yet</span></div>
         <p id="logs-comparison-message" class="muted" aria-live="polite">Replay the invocation, capture its events, and compare the complete log.</p>
         <details id="logs-comparison-details" open><summary>Approved and replayed JSON lines</summary>
-          <div id="logs-comparison-full" class="diff2"><div><h3 id="logs-expected-label">Expected · approved log</h3><pre id="logs-expected">Loading…</pre></div><div><h3>Actual · replayed events</h3><pre id="logs-actual">Capture the replayed events to rebuild the actual log.</pre></div></div>
+          <div id="logs-comparison-full" class="diff2"><div><h3 id="logs-expected-label">Expected · approved log</h3><pre id="logs-expected">Loading…</pre></div><div><h3 id="logs-actual-label">Actual · replayed events</h3><pre id="logs-actual">Capture the replayed events to rebuild the actual log.</pre></div></div>
         </details>
         <p class="micro">The comparison checks every line and event order. Only line endings and trailing whitespace are normalized.</p>
         <section id="logs-experiment" class="experiment-panel" aria-labelledby="logs-experiment-title">
           <div class="card-heading"><div><p class="eyebrow">04 / Experiment &amp; review</p><h2 id="logs-experiment-title">Can a recording catch a regression?</h2></div></div>
-          <p id="logs-lesson-message" class="muted" aria-live="polite">Try an incorrect total, or remove the invocation to see why replay needs its input.</p>
-          <div class="actions"><button id="logs-wrong-total" disabled>Try an incorrect total</button><button id="logs-remove-invocation" disabled>Remove the invocation</button><button id="logs-restore" class="primary" hidden>Restore recording</button></div>
-          <p class="micro">These experiments change a browser copy. Approved files on disk stay untouched.</p>
+          <p id="logs-lesson-message" class="muted" aria-live="polite">Simulate a buggy replay while keeping the expected recording fixed, or remove the invocation to see why replay needs its input.</p>
+          <div class="actions"><button id="logs-wrong-total" disabled>Simulate a buggy replay</button><button id="logs-remove-invocation" disabled>Remove the invocation</button><button id="logs-restore" class="primary" hidden>Restore recording</button></div>
+          <p class="micro">The buggy replay is simulated in captured events; expected output stays fixed. Removing the invocation changes a browser copy. Approved files stay untouched.</p>
         </section>
         <section class="traditional-test" aria-labelledby="logs-test-title">
           <div class="card-heading"><h3 id="logs-test-title">Equivalent traditional test</h3><span class="badge subtle">Vitest</span></div>
@@ -295,6 +295,6 @@
 
   <footer>Sleep Merger <span>Approved examples · Pure functions · Human review</span></footer>
   </main>
-  <script type="module" src="./demo.js?v=logs-event-colors-1"></script>
+  <script type="module" src="./demo.js?v=actual-bug-simulation-2"></script>
 </body>
 </html>
