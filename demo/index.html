@@ -6,7 +6,7 @@
   <title>Sleep Merger — see the overlap</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23172638'/%3E%3Cpath d='M22 6a11 11 0 1 0 4 18A10 10 0 0 1 22 6' fill='%23a9e6d8'/%3E%3C/svg%3E" />
   <meta name="theme-color" content="#172638" />
-  <link rel="stylesheet" href="./styles.css?v=approved-logs-layout-2" />
+  <link rel="stylesheet" href="./styles.css?v=logs-scenarios-2" />
 </head>
 <body>
   <header class="site-header">
@@ -238,9 +238,11 @@
       <div id="logs-load-error" class="notice error" role="alert" hidden></div>
       <div class="workspace">
         <section id="logs-recording" class="card" aria-labelledby="logs-recording-title">
-          <div class="card-heading"><div><p class="eyebrow">01 / Recording</p><h2 id="logs-recording-title">Two devices, one night</h2></div><span class="badge">Approved log</span></div>
+          <div class="card-heading"><div><p class="eyebrow">01 / Recording</p><h2 id="logs-recording-title">Choose a recording</h2></div><span id="logs-recording-badge" class="badge">Demo recording</span></div>
+          <label for="logs-scenario">Sleep scenario</label>
+          <select id="logs-scenario" disabled><option>Loading recordings…</option></select>
           <p class="muted">Review a recorded run once. Replay it whenever the code changes.</p>
-          <p class="file">logs/exact-duplicate.approved.log</p>
+          <p id="logs-recording-source" class="micro"></p>
           <div id="logs-recorded-events" class="event-list" aria-label="Events in the recorded log">Loading the approved recording…</div>
           <button id="logs-replay" class="primary wide" disabled>Replay recorded run <span aria-hidden="true">→</span></button>
           <p class="micro">The first event carries the sessions needed to reproduce the run.</p>
@@ -264,7 +266,7 @@
         <section id="logs-experiment" class="experiment-panel" aria-labelledby="logs-experiment-title">
           <div class="card-heading"><div><p class="eyebrow">04 / Experiment &amp; review</p><h2 id="logs-experiment-title">Can a recording catch a regression?</h2></div></div>
           <p id="logs-lesson-message" class="muted" aria-live="polite">Try an incorrect total, or remove the invocation to see why replay needs its input.</p>
-          <div class="actions"><button id="logs-wrong-total" disabled>Try an incorrect total</button><button id="logs-remove-invocation" disabled>Remove the invocation</button><button id="logs-restore" class="primary" hidden>Restore approved log</button></div>
+          <div class="actions"><button id="logs-wrong-total" disabled>Try an incorrect total</button><button id="logs-remove-invocation" disabled>Remove the invocation</button><button id="logs-restore" class="primary" hidden>Restore recording</button></div>
           <p class="micro">These experiments change a browser copy. Approved files on disk stay untouched.</p>
         </section>
         <section class="traditional-test" aria-labelledby="logs-test-title">
@@ -293,6 +295,6 @@
 
   <footer>Sleep Merger <span>Approved examples · Pure functions · Human review</span></footer>
   </main>
-  <script type="module" src="./demo.js?v=approved-logs-layout-2"></script>
+  <script type="module" src="./demo.js?v=logs-scenarios-2"></script>
 </body>
 </html>

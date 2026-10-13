@@ -1,4 +1,4 @@
-import { initLogs } from './logs.js?v=approved-logs-layout-2';
+import { initLogs } from './logs.js?v=logs-scenarios-2';
 import { mergeSleep } from './build/mergeSleep.js';
 import { logMerge } from './build/logMerge.js';
 import { normalizeText, parseScenario, renderScenario } from './build/fmt/tests/support/scenarioFormat.js';

@@ -1,0 +1,70 @@
+[
+  {
+    "id": "exact-duplicate",
+    "name": "Same night, two devices",
+    "title": "Exact duplicate from two sources becomes one session",
+    "source": "scenarios/exact-duplicate.approved.md",
+    "lines": [
+      "{\"event\":\"merge_requested\",\"sessions\":[{\"source\":\"fitbit\",\"start\":\"2026-10-01T22:00:00Z\",\"end\":\"2026-10-02T06:00:00Z\"},{\"source\":\"phone\",\"start\":\"2026-10-01T22:00:00Z\",\"end\":\"2026-10-02T06:00:00Z\"}]}",
+      "{\"event\":\"session_merged\",\"start\":\"2026-10-01T22:00:00Z\",\"end\":\"2026-10-02T06:00:00Z\"}",
+      "{\"event\":\"merge_completed\",\"totalMinutes\":480,\"overlapsMerged\":1}"
+    ]
+  },
+  {
+    "id": "partial-overlap",
+    "name": "Partly overlapping records",
+    "title": "Partial overlap becomes the union of both sessions",
+    "source": "scenarios/partial-overlap.approved.md",
+    "lines": [
+      "{\"event\":\"merge_requested\",\"sessions\":[{\"source\":\"fitbit\",\"start\":\"2026-10-01T22:00:00Z\",\"end\":\"2026-10-02T06:00:00Z\"},{\"source\":\"phone\",\"start\":\"2026-10-01T22:30:00Z\",\"end\":\"2026-10-02T06:30:00Z\"}]}",
+      "{\"event\":\"session_merged\",\"start\":\"2026-10-01T22:00:00Z\",\"end\":\"2026-10-02T06:30:00Z\"}",
+      "{\"event\":\"merge_completed\",\"totalMinutes\":510,\"overlapsMerged\":1}"
+    ]
+  },
+  {
+    "id": "contained-session",
+    "name": "One record inside another",
+    "title": "Contained session merges into the outer session",
+    "source": "scenarios/contained-session.approved.md",
+    "lines": [
+      "{\"event\":\"merge_requested\",\"sessions\":[{\"source\":\"fitbit\",\"start\":\"2026-10-01T22:00:00Z\",\"end\":\"2026-10-02T06:00:00Z\"},{\"source\":\"phone\",\"start\":\"2026-10-01T23:00:00Z\",\"end\":\"2026-10-02T02:00:00Z\"}]}",
+      "{\"event\":\"session_merged\",\"start\":\"2026-10-01T22:00:00Z\",\"end\":\"2026-10-02T06:00:00Z\"}",
+      "{\"event\":\"merge_completed\",\"totalMinutes\":480,\"overlapsMerged\":1}"
+    ]
+  },
+  {
+    "id": "touching-sessions",
+    "name": "Touching is not overlapping",
+    "title": "Touching sessions stay separate",
+    "source": "scenarios/touching-sessions.approved.md",
+    "lines": [
+      "{\"event\":\"merge_requested\",\"sessions\":[{\"source\":\"fitbit\",\"start\":\"2026-10-01T22:00:00Z\",\"end\":\"2026-10-01T23:00:00Z\"},{\"source\":\"phone\",\"start\":\"2026-10-01T23:00:00Z\",\"end\":\"2026-10-02T00:00:00Z\"}]}",
+      "{\"event\":\"session_merged\",\"start\":\"2026-10-01T22:00:00Z\",\"end\":\"2026-10-01T23:00:00Z\"}",
+      "{\"event\":\"session_merged\",\"start\":\"2026-10-01T23:00:00Z\",\"end\":\"2026-10-02T00:00:00Z\"}",
+      "{\"event\":\"merge_completed\",\"totalMinutes\":120,\"overlapsMerged\":0}"
+    ]
+  },
+  {
+    "id": "chain-of-three",
+    "name": "A chain of three overlaps",
+    "title": "Chain of three overlapping sessions becomes one",
+    "source": "scenarios/chain-of-three.approved.md",
+    "lines": [
+      "{\"event\":\"merge_requested\",\"sessions\":[{\"source\":\"fitbit\",\"start\":\"2026-10-01T22:00:00Z\",\"end\":\"2026-10-02T00:00:00Z\"},{\"source\":\"phone\",\"start\":\"2026-10-01T23:30:00Z\",\"end\":\"2026-10-02T02:00:00Z\"},{\"source\":\"watch\",\"start\":\"2026-10-02T01:30:00Z\",\"end\":\"2026-10-02T04:00:00Z\"}]}",
+      "{\"event\":\"session_merged\",\"start\":\"2026-10-01T22:00:00Z\",\"end\":\"2026-10-02T04:00:00Z\"}",
+      "{\"event\":\"merge_completed\",\"totalMinutes\":360,\"overlapsMerged\":2}"
+    ]
+  },
+  {
+    "id": "separate-sessions",
+    "name": "Night sleep and a daytime nap",
+    "title": "Separate sessions stay separate and come back in time order",
+    "source": "scenarios/separate-sessions.approved.md",
+    "lines": [
+      "{\"event\":\"merge_requested\",\"sessions\":[{\"source\":\"phone\",\"start\":\"2026-10-02T14:00:00Z\",\"end\":\"2026-10-02T14:45:00Z\"},{\"source\":\"watch\",\"start\":\"2026-10-01T23:00:00Z\",\"end\":\"2026-10-02T07:00:00Z\"}]}",
+      "{\"event\":\"session_merged\",\"start\":\"2026-10-01T23:00:00Z\",\"end\":\"2026-10-02T07:00:00Z\"}",
+      "{\"event\":\"session_merged\",\"start\":\"2026-10-02T14:00:00Z\",\"end\":\"2026-10-02T14:45:00Z\"}",
+      "{\"event\":\"merge_completed\",\"totalMinutes\":525,\"overlapsMerged\":0}"
+    ]
+  }
+]
