@@ -6,7 +6,7 @@
   <title>Sleep Merger — see the overlap</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23172638'/%3E%3Cpath d='M22 6a11 11 0 1 0 4 18A10 10 0 0 1 22 6' fill='%23a9e6d8'/%3E%3C/svg%3E" />
   <meta name="theme-color" content="#172638" />
-  <link rel="stylesheet" href="./styles.css?v=playground-reset-2" />
+  <link rel="stylesheet" href="./styles.css?v=approved-logs-layout-2" />
 </head>
 <body>
   <header class="site-header">
@@ -88,7 +88,7 @@
       <button data-step="compare"><span>3</span> Compare</button>
       <button data-step="review"><span>4</span> Review</button>
       <p id="step-help">Start with an approved example.</p>
-      <button id="playground-reset" aria-label="Reset playground" title="Reset playground" disabled><span aria-hidden="true">↺</span><span class="reset-label">Reset playground</span></button>
+      <button id="playground-reset" class="reset-control" aria-label="Reset playground" title="Reset playground" disabled><span aria-hidden="true">↺</span><span class="reset-label">Reset playground</span></button>
     </nav>
     <div id="load-error" class="notice error" role="alert" hidden></div>
     <div class="workspace">
@@ -173,11 +173,107 @@
     </details>
   </section>
 
-  <section id="tab-logs" role="tabpanel" aria-labelledby="nav-logs" hidden>
-    <div class="intro"><p class="eyebrow">Approved Logs</p><h1>A captured run.<br>A replayable test.</h1></div>
-    <p>Line 1 is the invocation (<code>merge_requested</code> carrying the input sessions); the rest is the expected emitted output. The runner (<code>tests/logs.test.ts</code>) replays line 1 through <code>logMerge</code> and compares every captured line.</p>
-    <div class="filelist" id="loglist"></div>
-    <pre id="logview">pick a log above</pre>
+  <section id="tab-logs" class="logs-workbench" role="tabpanel" aria-labelledby="nav-logs" hidden>
+    <section class="card runner-overview" id="logs-loop-wrap" aria-labelledby="logs-runner-title">
+      <div class="card-heading"><h2 id="logs-runner-title">Log replay loop <span class="badge subtle">Approved Logs</span></h2><button id="logs-clear-highlight">Clear highlight</button></div>
+      <div class="runner-width-control"><label for="logs-runner-width">Runner width <output id="logs-width-value" for="logs-runner-width">330 px</output></label><input id="logs-runner-width" type="range" min="280" max="620" step="10" value="330" /></div>
+      <p id="logs-runner-message" class="muted" role="status">A reviewed recording becomes a replayable regression test.</p>
+      <div id="logs-loop-diagram" class="loop">
+        <svg id="logs-runner-graph" viewBox="0 0 360 608" role="group" aria-labelledby="logs-graph-title">
+          <title id="logs-graph-title">Approved logs replay loop</title>
+          <defs><marker id="logs-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/></marker></defs>
+          <g class="runner-edges" fill="none" marker-end="url(#logs-arrow)">
+            <path data-edge-from="fixture" data-edge-to="parse" d="M180 70 V96"/>
+            <path data-edge-from="parse" data-edge-to="execute" d="M180 150 V176"/>
+            <path data-edge-from="execute" data-edge-to="render" d="M180 230 V256"/>
+            <path data-edge-from="render" data-edge-to="compare" d="M180 310 V336"/>
+            <path data-edge-from="compare" data-edge-to="pass" d="M180 390 V416"/>
+            <path class="mismatch-edge" data-edge-from="compare" data-edge-to="decide" d="M295 363 H326 V523 H295"/>
+            <path class="return-edge" data-edge-from="decide" data-edge-to="compare" d="M180 550 V578 H8 V363 H65"/>
+          </g>
+          <g class="runner-edge-labels"><text x="198" y="407">match</text><text x="338" y="443" transform="rotate(90 338 443)" text-anchor="middle">mismatch</text><text x="180" y="600" text-anchor="middle">Try or restore, then compare again</text></g>
+          <g data-log-node="fixture" data-node-label="Approved .log file" class="runner-node external" role="button" tabindex="0" aria-label="Explore Approved .log file" aria-pressed="false">
+            <rect x="65" y="16" width="230" height="54" rx="9"/>
+            <text class="node-label" x="180.0" y="38" text-anchor="middle">Approved .log file</text>
+            <text class="node-description" x="180.0" y="56" text-anchor="middle">invocation + events</text>
+          </g>
+          <g data-log-node="parse" data-node-label="Read invocation" class="runner-node backend" role="button" tabindex="0" aria-label="Explore Read invocation" aria-pressed="false">
+            <rect x="65" y="96" width="230" height="54" rx="9"/>
+            <text class="node-label" x="180.0" y="118" text-anchor="middle">Read invocation</text>
+            <text class="node-description" x="180.0" y="136" text-anchor="middle">extract replay inputs</text>
+          </g>
+          <g data-log-node="execute" data-node-label="Replay logMerge" class="runner-node backend" role="button" tabindex="0" aria-label="Explore Replay logMerge" aria-pressed="false">
+            <rect x="65" y="176" width="230" height="54" rx="9"/>
+            <text class="node-label" x="180.0" y="198" text-anchor="middle">Replay logMerge</text>
+            <text class="node-description" x="180.0" y="216" text-anchor="middle">run the recorded request</text>
+          </g>
+          <g data-log-node="render" data-node-label="Capture events" class="runner-node backend" role="button" tabindex="0" aria-label="Explore Capture events" aria-pressed="false">
+            <rect x="65" y="256" width="230" height="54" rx="9"/>
+            <text class="node-label" x="180.0" y="278" text-anchor="middle">Capture events</text>
+            <text class="node-description" x="180.0" y="296" text-anchor="middle">rebuild the replayed log</text>
+          </g>
+          <g data-log-node="compare" data-node-label="Compare full log" class="runner-node backend" role="button" tabindex="0" aria-label="Explore Compare full log" aria-pressed="false">
+            <rect x="65" y="336" width="230" height="54" rx="9"/>
+            <text class="node-label" x="180.0" y="358" text-anchor="middle">Compare full log</text>
+            <text class="node-description" x="180.0" y="376" text-anchor="middle">every event, in order</text>
+          </g>
+          <g data-log-node="pass" data-node-label="PASS" class="runner-node backend" role="button" tabindex="0" aria-label="Explore PASS" aria-pressed="false">
+            <rect x="65" y="416" width="230" height="54" rx="9"/>
+            <text class="node-label" x="180.0" y="438" text-anchor="middle">PASS</text>
+            <text class="node-description" x="180.0" y="456" text-anchor="middle">recording matches replay</text>
+          </g>
+          <g data-log-node="decide" data-node-label="Human decides" class="runner-node security" role="button" tabindex="0" aria-label="Explore Human decides" aria-pressed="false">
+            <rect x="65" y="496" width="230" height="54" rx="9"/>
+            <text class="node-label" x="180.0" y="518" text-anchor="middle">Human decides</text>
+            <text class="node-description" x="180.0" y="536" text-anchor="middle">explore a mismatch</text>
+          </g>
+        </svg>
+      </div>
+    </section>
+    <div class="demo-content">
+      <nav class="steps" aria-label="Log replay steps">
+        <button data-log-step="input" aria-current="step"><span>1</span> Recording</button><button data-log-step="run"><span>2</span> Replay</button><button data-log-step="compare"><span>3</span> Compare</button><button data-log-step="review"><span>4</span> Review</button>
+        <button id="logs-reset" class="reset-control" aria-label="Reset logs" title="Reset logs" disabled><span aria-hidden="true">↺</span><span class="reset-label">Reset logs</span></button>
+      </nav>
+      <div id="logs-load-error" class="notice error" role="alert" hidden></div>
+      <div class="workspace">
+        <section id="logs-recording" class="card" aria-labelledby="logs-recording-title">
+          <div class="card-heading"><div><p class="eyebrow">01 / Recording</p><h2 id="logs-recording-title">Two devices, one night</h2></div><span class="badge">Approved log</span></div>
+          <p class="muted">Review a recorded run once. Replay it whenever the code changes.</p>
+          <p class="file">logs/exact-duplicate.approved.log</p>
+          <div id="logs-recorded-events" class="event-list" aria-label="Events in the recorded log">Loading the approved recording…</div>
+          <button id="logs-replay" class="primary wide" disabled>Replay recorded run <span aria-hidden="true">→</span></button>
+          <p class="micro">The first event carries the sessions needed to reproduce the run.</p>
+          <details open><summary>Inspect recorded JSON lines</summary><pre id="logs-recorded-raw">Loading…</pre></details>
+          <details id="logs-invocation-details" open><summary>Inspect replay input <span id="logs-parse-status" class="badge subtle" role="status">Not read yet</span></summary><pre id="logs-input">Choose Read invocation to inspect the replay input.</pre></details>
+        </section>
+        <section id="logs-replay-stage" class="card" aria-labelledby="logs-replay-title">
+          <div class="card-heading"><div><p class="eyebrow">02 / Replay</p><h2 id="logs-replay-title">Replay and capture events</h2></div><span id="logs-capture-status" class="badge subtle" role="status">Not replayed yet</span></div>
+          <p class="muted">The real logMerge function runs the recorded request and returns a new sequence of events.</p>
+          <div id="logs-replayed-events" class="event-list" aria-label="Events captured during replay"><p class="empty-result">Replay the recording to capture its events.</p></div>
+          <details open><summary>Inspect captured JSON events</summary><pre id="logs-captured-raw">No events captured yet.</pre></details>
+        </section>
+      </div>
+      <section id="logs-compare-stage" class="card" aria-labelledby="logs-compare-title">
+        <div class="card-heading"><div><p class="eyebrow">03 / Compare</p><h2 id="logs-compare-title">Approved vs replayed log</h2></div><span id="logs-comparison-status" class="badge subtle" role="status">Not replayed yet</span></div>
+        <p id="logs-comparison-message" class="muted" aria-live="polite">Replay the invocation, capture its events, and compare the complete log.</p>
+        <details id="logs-comparison-details" open><summary>Approved and replayed JSON lines</summary>
+          <div id="logs-comparison-full" class="diff2"><div><h3 id="logs-expected-label">Expected · approved log</h3><pre id="logs-expected">Loading…</pre></div><div><h3>Actual · replayed events</h3><pre id="logs-actual">Capture the replayed events to rebuild the actual log.</pre></div></div>
+        </details>
+        <p class="micro">The comparison checks every line and event order. Only line endings and trailing whitespace are normalized.</p>
+        <section id="logs-experiment" class="experiment-panel" aria-labelledby="logs-experiment-title">
+          <div class="card-heading"><div><p class="eyebrow">04 / Experiment &amp; review</p><h2 id="logs-experiment-title">Can a recording catch a regression?</h2></div></div>
+          <p id="logs-lesson-message" class="muted" aria-live="polite">Try an incorrect total, or remove the invocation to see why replay needs its input.</p>
+          <div class="actions"><button id="logs-wrong-total" disabled>Try an incorrect total</button><button id="logs-remove-invocation" disabled>Remove the invocation</button><button id="logs-restore" class="primary" hidden>Restore approved log</button></div>
+          <p class="micro">These experiments change a browser copy. Approved files on disk stay untouched.</p>
+        </section>
+        <section class="traditional-test" aria-labelledby="logs-test-title">
+          <div class="card-heading"><h3 id="logs-test-title">Equivalent traditional test</h3><span class="badge subtle">Vitest</span></div>
+          <p id="logs-test-note" class="micro">The recorded input and approved event sequence, expressed as assertions.</p>
+          <pre id="logs-test-code" class="code" tabindex="0" aria-label="Traditional test code for the approved log">Loading…</pre>
+        </section>
+      </section>
+    </div>
   </section>
 
   <section id="tab-diagram" role="tabpanel" aria-labelledby="nav-diagram" hidden>
@@ -197,6 +293,6 @@
 
   <footer>Sleep Merger <span>Approved examples · Pure functions · Human review</span></footer>
   </main>
-  <script type="module" src="./demo.js?v=playground-reset-2"></script>
+  <script type="module" src="./demo.js?v=approved-logs-layout-2"></script>
 </body>
 </html>

@@ -1,3 +1,4 @@
+import { initLogs } from './logs.js?v=approved-logs-layout-2';
 import { mergeSleep } from './build/mergeSleep.js';
 import { logMerge } from './build/logMerge.js';
 import { normalizeText, parseScenario, renderScenario } from './build/fmt/tests/support/scenarioFormat.js';
@@ -35,6 +36,7 @@ function activateTab(button, focus = false) {
     $(`tab-${tab.dataset.tab}`).hidden = !active;
   });
   if (button.dataset.tab === 'demo') updateRunnerWidth();
+  if (button.dataset.tab === 'logs') window.dispatchEvent(new Event('resize'));
   if (focus) button.focus();
 }
 tabs.forEach((tab, index) => {
@@ -469,10 +471,8 @@ async function loadReference(path, id, code = false) {
 Promise.allSettled([
   ...[['types', 'types'], ['mergeSleep', 'merge'], ['logMerge', 'logmerge']].map(([file, id]) => loadReference(`../src/${file}.ts`, `src-${id}`, true)),
   loadReference('../tests/scenarios.test.ts', 'src-runner', true),
-  loadReference('../logs/exact-duplicate.approved.log', 'logview'),
 ]);
-$('loglist').innerHTML = '<button id="reload-log">Exact duplicate · approved log</button>';
-$('reload-log').addEventListener('click', () => loadReference('../logs/exact-duplicate.approved.log', 'logview'));
+initLogs(highlight);
 const loaded = await Promise.allSettled(examples.map(async (example) => {
   const text = await fetchText(`../scenarios/${example.file}`);
   parseScenario(text);

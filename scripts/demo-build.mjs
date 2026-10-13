@@ -9,10 +9,10 @@ execSync(
   { stdio: 'inherit' },
 );
 
-// The scenario parser/renderer (type-only src import, so no import patching
-// needed) powers the live red→green replay in the Scenarios tab.
+// The real scenario and log parsers/renderers power the browser playgrounds.
+// Their source imports are type-only, so no import patching is needed.
 execSync(
-  'node node_modules/typescript/bin/tsc tests/support/scenarioFormat.ts src/types.ts --ignoreConfig --target ES2022 --module ES2022 --moduleResolution bundler --strict --skipLibCheck --outDir demo/build/fmt --rootDir .',
+  'node node_modules/typescript/bin/tsc tests/support/scenarioFormat.ts tests/support/logFormat.ts src/types.ts --ignoreConfig --target ES2022 --module ES2022 --moduleResolution bundler --strict --skipLibCheck --outDir demo/build/fmt --rootDir .',
   { stdio: 'inherit' },
 );
 

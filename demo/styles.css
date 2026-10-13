@@ -170,7 +170,7 @@ footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10
 /* Center the workbench while keeping its graphical sidebar persistent. */
 main { max-width: 1680px; width: 100%; margin: 0 auto; }
 .site-header { padding: 18px max(24px, calc((100vw - 1632px) / 2)); }
-#tab-demo { display: grid; grid-template-columns: var(--runner-width, 370px) minmax(0, 1fr); gap: 24px; align-items: start; padding-top: 20px; }
+#tab-demo, #tab-logs { display: grid; grid-template-columns: var(--runner-width, 330px) minmax(0, 1fr); gap: 24px; align-items: start; padding-top: 20px; }
 .demo-content { min-width: 0; }
 .runner-overview { top: 12px; margin: 0; padding: 16px; max-height: calc(100svh - 24px); overflow-y: auto; }
 .runner-overview .card-heading { gap: 10px; }
@@ -178,7 +178,7 @@ main { max-width: 1680px; width: 100%; margin: 0 auto; }
 .runner-tools { width: 100%; justify-content: space-between; }
 .runner-overview p { margin-top: 12px; font-size: .85rem; }
 .runner-overview .loop { height: auto; margin-top: 12px; }
-#runner-graph { display: block; width: 100%; height: auto; color: #718c99; }
+#runner-graph, #logs-runner-graph { display: block; width: 100%; height: auto; color: #718c99; }
 .runner-edges { stroke: currentColor; stroke-width: 1.6; }
 .mismatch-edge { color: #b14b3e; stroke: currentColor; }
 .return-edge { stroke-dasharray: 4 4; }
@@ -196,19 +196,19 @@ main { max-width: 1680px; width: 100%; margin: 0 auto; }
 .demo-content h1 { font-size: clamp(2.2rem, 3vw, 3.2rem); margin-bottom: 14px; }
 .demo-content .intro > p:last-child { max-width: 780px; margin-bottom: 0; }
 @media (max-width: 1100px) and (min-width: 701px) {
-  #tab-demo { grid-template-columns: var(--runner-width, 280px) minmax(0, 1fr); gap: 18px; }
+  #tab-demo, #tab-logs { grid-template-columns: var(--runner-width, 280px) minmax(0, 1fr); gap: 18px; }
   .workspace, .comparison-layout { grid-template-columns: minmax(0, 1fr); }
   .traditional-test { border-left: 0; border-top: 1px solid var(--line); padding: 24px 0 0; }
   .steps p { display: none; }
   .steps button { padding: 8px 6px; gap: 5px; }
 }
 @media (max-width: 700px) {
-  #tab-demo { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+  #tab-demo, #tab-logs { grid-template-columns: minmax(0, 1fr); gap: 18px; }
   .runner-overview { padding: 12px; max-height: 300px; top: 4px; }
   .runner-overview .card-heading h2 { width: auto; }
   .runner-tools { width: auto; }
   .runner-overview .loop { height: 170px; overflow-y: auto; }
-  #runner-graph { max-width: 300px; margin: auto; }
+  #runner-graph, #logs-runner-graph { max-width: 300px; margin: auto; }
   .runner-overview p { margin-top: 6px; font-size: .75rem; }
 }
 
@@ -224,7 +224,7 @@ main { max-width: 1680px; width: 100%; margin: 0 auto; }
 .runner-width-control { margin-top: 14px; }
 .runner-width-control label { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
 .runner-width-control output { color: var(--muted); font-weight: 400; font-variant-numeric: tabular-nums; }
-#runner-width { display: block; width: 100%; margin: 0; accent-color: var(--accent); cursor: ew-resize; min-height: 24px; }
+.runner-width-control input[type="range"] { display: block; width: 100%; margin: 0; accent-color: var(--accent); cursor: ew-resize; min-height: 24px; }
 .demo-content { container-type: inline-size; }
 @container (max-width: 720px) {
   .workspace { grid-template-columns: minmax(0, 1fr); }
@@ -276,13 +276,25 @@ main { max-width: 1680px; width: 100%; margin: 0 auto; }
   #comparison-details { margin-top: 10px; }
 }
 
-.steps #playground-reset { margin-left: auto; border-color: var(--line); background: white; flex-shrink: 0; }
-.steps #playground-reset .reset-label { display: inline; width: auto; height: auto; background: transparent; border-radius: 0; font-size: inherit; }
+.steps .reset-control { margin-left: auto; border-color: var(--line); background: white; flex-shrink: 0; }
+.steps .reset-control .reset-label { display: inline; width: auto; height: auto; background: transparent; border-radius: 0; font-size: inherit; }
 @container (max-width: 900px) {
-  .steps p, .steps #playground-reset .reset-label { display: none; }
+  .steps p, .steps .reset-control .reset-label { display: none; }
 }
-@media (max-width: 700px) { .steps #playground-reset .reset-label { display: none; } }
+@media (max-width: 700px) { .steps .reset-control .reset-label { display: none; } }
 @media (max-width: 360px) { .steps [data-step] span { display: none; } }
 @container (max-width: 500px) {
   .demo-content .steps button { padding: 6px 4px; gap: 4px; }
 }
+
+html:has(#tab-logs:not([hidden])) { scroll-padding-top: calc(var(--logs-runner-offset, 12px) + 76px); }
+#logs-compare-stage > .traditional-test { border-left: 0; border-top: 1px solid var(--line); padding: 12px 0 0; margin-top: 12px; }
+.event-list { display: grid; gap: 10px; margin: 14px 0; }
+.event-card { background: #f5f8f8; border: 1px solid var(--line); border-radius: 9px; padding: 12px; }
+.event-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.event-heading h3 { margin: 0; }
+.event-heading code { color: var(--muted); font-size: 11px; overflow-wrap: anywhere; }
+.event-number { background: #dfeee9; color: var(--accent); border-radius: 50%; display: grid; place-items: center; width: 22px; height: 22px; font-weight: 700; flex: none; }
+.event-card p, .event-card .session-list { margin: 0; }
+.event-card .session-list li { padding: 5px 0; }
+@media (max-width: 360px) { .steps [data-log-step] span { display: none; } }
