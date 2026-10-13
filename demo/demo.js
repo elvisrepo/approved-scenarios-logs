@@ -1,4 +1,4 @@
-import { initLogs } from './logs.js?v=actual-bug-simulation-2';
+import { initLogs } from './logs.js?v=logs-capture-review-2';
 import { mergeSleep } from './build/mergeSleep.js';
 import { logMerge } from './build/logMerge.js';
 import { normalizeText, parseScenario, renderScenario } from './build/fmt/tests/support/scenarioFormat.js';

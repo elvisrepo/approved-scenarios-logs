@@ -6,7 +6,7 @@
   <title>Sleep Merger — see the overlap</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23172638'/%3E%3Cpath d='M22 6a11 11 0 1 0 4 18A10 10 0 0 1 22 6' fill='%23a9e6d8'/%3E%3C/svg%3E" />
   <meta name="theme-color" content="#172638" />
-  <link rel="stylesheet" href="./styles.css?v=actual-bug-simulation-2" />
+  <link rel="stylesheet" href="./styles.css?v=logs-capture-review-2" />
 </head>
 <body>
   <header class="site-header">
@@ -179,9 +179,17 @@
       <div class="runner-width-control"><label for="logs-runner-width">Runner width <output id="logs-width-value" for="logs-runner-width">330 px</output></label><input id="logs-runner-width" type="range" min="280" max="620" step="10" value="330" /></div>
       <p id="logs-runner-message" class="muted" role="status">A reviewed recording becomes a replayable regression test.</p>
       <div id="logs-loop-diagram" class="loop">
-        <svg id="logs-runner-graph" viewBox="0 0 360 608" role="group" aria-labelledby="logs-graph-title">
+        <svg id="logs-runner-graph" viewBox="0 0 360 768" role="group" aria-labelledby="logs-graph-title">
           <title id="logs-graph-title">Approved logs replay loop</title>
           <defs><marker id="logs-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/></marker></defs>
+          <g class="runner-edges" fill="none" marker-end="url(#logs-arrow)"><path d="M180 70 V96"/><path d="M180 150 V176"/></g>
+          <g data-log-node="bug" class="runner-node security" role="button" tabindex="0" aria-label="Explore Captured bug" aria-pressed="false">
+            <rect x="65" y="16" width="230" height="54" rx="9"/><text class="node-label" x="180" y="38" text-anchor="middle">Captured bug</text><text class="node-description" x="180" y="56" text-anchor="middle">evidence from a faulty run</text>
+          </g>
+          <g data-log-node="approve" class="runner-node external" role="button" tabindex="0" aria-label="Explore Review and correct" aria-pressed="false">
+            <rect x="65" y="96" width="230" height="54" rx="9"/><text class="node-label" x="180" y="118" text-anchor="middle">Review and correct</text><text class="node-description" x="180" y="136" text-anchor="middle">approve expected behavior</text>
+          </g>
+          <g transform="translate(0 160)">
           <g class="runner-edges" fill="none" marker-end="url(#logs-arrow)">
             <path data-edge-from="fixture" data-edge-to="parse" d="M180 70 V96"/>
             <path data-edge-from="parse" data-edge-to="execute" d="M180 150 V176"/>
@@ -227,6 +235,7 @@
             <text class="node-label" x="180.0" y="518" text-anchor="middle">Human decides</text>
             <text class="node-description" x="180.0" y="536" text-anchor="middle">explore a mismatch</text>
           </g>
+          </g>
         </svg>
       </div>
     </section>
@@ -236,11 +245,23 @@
         <button id="logs-reset" class="reset-control" aria-label="Reset logs" title="Reset logs" disabled><span aria-hidden="true">↺</span><span class="reset-label">Reset logs</span></button>
       </nav>
       <div id="logs-load-error" class="notice error" role="alert" hidden></div>
+      <section id="logs-create-stage" class="card" aria-labelledby="logs-create-title">
+        <div class="card-heading"><div><p class="eyebrow">Capture → review → regression test</p><h2 id="logs-create-title">Turn bug evidence into an expected recording</h2></div><span id="logs-create-status" class="badge subtle" role="status">Ready to capture</span></div>
+          <label for="logs-scenario">Sleep scenario</label>
+          <select id="logs-scenario" disabled><option>Loading recordings…</option></select>
+        <p class="muted">Capture a simulated faulty run of the selected sleep scenario. Correct its expected outcome, approve the browser copy, then replay the same input against the faulty behavior.</p>
+        <button id="logs-capture-bug" disabled>Capture a buggy run</button>
+        <details id="logs-review-details" open hidden><summary>Review captured evidence and expected behavior</summary>
+          <div class="diff2"><div><h3>Captured bug · original evidence</h3><pre id="logs-bug-evidence"></pre></div><div><h3>Corrected expected recording · draft</h3><pre id="logs-review-preview"></pre></div></div>
+          <div class="actions"><label for="logs-reviewed-total">Expected minutes asleep<input id="logs-reviewed-total" type="number" min="0" step="1" required /></label><button id="logs-correct-total">Use scenario’s correct total</button></div>
+          <p id="logs-review-message" class="micro" aria-live="polite"></p>
+          <div class="actions"><button id="logs-approve-recording" class="primary" disabled>Approve expected recording &amp; replay</button><button id="logs-download-recording" disabled>Download approved .log</button></div>
+          <p class="micro">Approval saves this fixture in browser memory. The captured evidence stays intact. Repository files and implementation code stay unchanged; fixing the replay is simulated.</p>
+        </details>
+      </section>
       <div class="workspace">
         <section id="logs-recording" class="card" aria-labelledby="logs-recording-title">
           <div class="card-heading"><div><p class="eyebrow">01 / Recording</p><h2 id="logs-recording-title">Choose a recording</h2></div><span id="logs-recording-badge" class="badge">Demo recording</span></div>
-          <label for="logs-scenario">Sleep scenario</label>
-          <select id="logs-scenario" disabled><option>Loading recordings…</option></select>
           <p class="muted">Review a recorded run once. Replay it whenever the code changes.</p>
           <p id="logs-recording-source" class="micro"></p>
           <div id="logs-recorded-events" class="event-list" aria-label="Events in the recorded log">Loading the approved recording…</div>
@@ -295,6 +316,6 @@
 
   <footer>Sleep Merger <span>Approved examples · Pure functions · Human review</span></footer>
   </main>
-  <script type="module" src="./demo.js?v=actual-bug-simulation-2"></script>
+  <script type="module" src="./demo.js?v=logs-capture-review-2"></script>
 </body>
 </html>

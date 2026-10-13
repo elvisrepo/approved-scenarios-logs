@@ -305,4 +305,6 @@ html:has(#tab-logs:not([hidden])) { scroll-padding-top: calc(var(--logs-runner-o
 #logs-replay-stage .event-number { background: var(--event-color); color: white; }
 #logs-captured-raw { white-space: normal; background: transparent; padding: 0; }
 .event-json-line { display: block; white-space: pre-wrap; overflow-wrap: anywhere; padding: 10px; border-radius: 8px; margin-bottom: 8px; }
+#logs-create-stage .actions label { display: grid; gap: 6px; }
+#logs-reviewed-total { font: inherit; color: var(--ink); background: white; border: 1px solid #c4d2d9; border-radius: 9px; min-height: 38px; padding: 6px 10px; width: 180px; max-width: 100%; }
 @media (max-width: 360px) { .steps [data-log-step] span { display: none; } }
